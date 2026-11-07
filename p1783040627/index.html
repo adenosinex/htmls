@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📦 个人体能说明书 V1.0</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#f5f1ea;--surface:#ffffff;--ink:#1a1a2e;--ink2:#3d3d52;--muted:#8a8a9a;
+  --accent:#d4592a;--accent-l:#fef3ee;
+  --green:#1a7a5c;--green-l:#e6f5ef;
+  --gold:#c7941a;--gold-l:#fef9ec;
+  --blue:#2563eb;--red:#c53030;
+  --border:#e5e1d9;--r:12px;--rs:8px;
+}
+html{scroll-behavior:smooth;scroll-padding-top:40px}
+body{font-family:'Lora',serif;background:var(--bg);color:var(--ink);line-height:1.75;font-size:15.5px;-webkit-font-smoothing:antialiased}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:9999}
+
+/* ── Typography ── */
+h1,h2,h3,h4{font-family:'Syne',sans-serif;font-weight:700;line-height:1.2;color:var(--ink)}
+.section-label{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;font-weight:500}
+.section-title{font-size:clamp(1.8rem,3.5vw,2.4rem);margin-bottom:10px;position:relative}
+.section-title::after{content:'';display:block;width:48px;height:3px;background:var(--accent);border-radius:2px;margin-top:10px}
+.section-desc{color:var(--ink2);max-width:640px;margin-bottom:36px;font-size:15px}
+
+/* ── Sidebar ── */
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:220px;background:var(--surface);border-right:1px solid var(--border);padding:28px 0;z-index:100;display:flex;flex-direction:column}
+.sidebar-brand{padding:0 24px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
+.brand-mark{width:36px;height:36px;background:var(--accent);color:#fff;font-family:'Syne',sans-serif;font-weight:800;font-size:14px;border-radius:var(--rs);display:flex;align-items:center;justify-content:center}
+.brand-text{font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:var(--ink)}
+.nav-list{list-style:none;padding:20px 12px;flex:1}
+.nav-list li{margin-bottom:2px}
+.nav-list a{display:flex;align-items:center;gap:10px;padding:9px 14px;border-radius:var(--rs);text-decoration:none;font-family:'Syne',sans-serif;font-size:13.5px;font-weight:500;color:var(--muted);transition:all .2s ease;position:relative}
+.nav-list a::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--border);flex-shrink:0;transition:all .2s ease}
+.nav-list a:hover{color:var(--ink);background:var(--bg)}
+.nav-list a:hover::before{background:var(--accent)}
+.nav-list a.active{color:var(--accent);background:var(--accent-l)}
+.nav-list a.active::before{background:var(--accent);box-shadow:0 0 0 3px rgba(212,89,42,0.15)}
+.sidebar-footer{padding:16px 24px;border-top:1px solid var(--border);font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)}
+
+.mobile-toggle{display:none;position:fixed;top:16px;left:16px;z-index:200;width:40px;height:40px;border-radius:var(--rs);background:var(--surface);border:1px solid var(--border);cursor:pointer;flex-direction:column;align-items:center;justify-content:center;gap:5px}
+.mobile-toggle span{display:block;width:18px;height:2px;background:var(--ink);border-radius:1px;transition:all .25s ease}
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:90}
+
+/* ── Main ── */
+.main{margin-left:220px;min-height:100vh}
+section{padding:60px 48px 0;max-width:960px}
+section:last-of-type{padding-bottom:80px}
+
+/* ── Hero ── */
+.hero{background:linear-gradient(145deg,#1a1a2e 0%,#2a2a48 50%,#1a1a2e 100%);color:#fff;position:relative;overflow:hidden;padding:80px 48px 72px;max-width:none;margin-left:0}
+.hero::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(45deg,transparent,transparent 28px,rgba(255,255,255,.018) 28px,rgba(255,255,255,.018) 29px);pointer-events:none}
+.hero::after{content:'V1.0';position:absolute;top:-30px;right:-20px;font-family:'Syne',sans-serif;font-size:260px;font-weight:800;color:rgba(255,255,255,.03);line-height:1;pointer-events:none}
+.hero-inner{position:relative;z-index:1;max-width:960px;margin:0 auto}
+.hero-badge{display:inline-block;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.12em;padding:6px 16px;border:1px solid rgba(255,255,255,.2);border-radius:99px;color:rgba(255,255,255,.7);margin-bottom:28px}
+.hero h1{font-size:clamp(2.4rem,5vw,3.6rem);font-weight:800;margin-bottom:12px;letter-spacing:-0.02em}
+.hero-sub{font-family:'Lora',serif;font-style:italic;font-size:18px;color:rgba(255,255,255,.55);margin-bottom:48px}
+.hero-metrics{display:flex;gap:32px;flex-wrap:wrap}
+.metric{display:flex;align-items:baseline;gap:8px;padding:16px 24px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:var(--r);backdrop-filter:blur(4px)}
+.metric-val{font-family:'Syne',sans-serif;font-size:32px;font-weight:800;color:#fff}
+.metric-unit{font-family:'DM Mono',monospace;font-size:12px;color:rgba(255,255,255,.5);letter-spacing:0.05em}
+
+/* ── Goals ── */
+.goals-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;margin-top:8px}
+.goal-card{background:var(--surface);border-radius:var(--r);padding:24px;border:1px solid var(--border);position:relative;overflow:hidden;transition:transform .2s ease,box-shadow .2s ease}
+.goal-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(26,26,46,.06)}
+.goal-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px}
+.goal-card[data-priority="5"]::before{background:var(--accent)}
+.goal-card[data-priority="4"]::before{background:var(--blue)}
+.goal-card[data-priority="2"]::before{background:var(--gold)}
+.goal-rank{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--accent);margin-bottom:4px}
+.goal-card[data-priority="4"] .goal-rank{color:var(--blue)}
+.goal-card[data-priority="2"] .goal-rank{color:var(--gold)}
+.goal-name{font-family:'Syne',sans-serif;font-size:16px;font-weight:600;margin-bottom:12px}
+.goal-bar{display:flex;gap:4px}
+.goal-bar .seg{width:28px;height:7px;border-radius:3px;background:var(--border);transition:all .3s ease}
+.goal-bar .seg.on{background:var(--accent)}
+.goal-card[data-priority="4"] .goal-bar .seg.on{background:var(--blue)}
+.goal-card[data-priority="2"] .goal-bar .seg.on{background:var(--gold)}
+
+/* ── Movement Cards ── */
+.move-card{background:var(--surface);border-radius:var(--r);border:1px solid var(--border);margin-bottom:16px;overflow:hidden;transition:box-shadow .25s ease}
+.move-card:hover{box-shadow:0 4px 20px rgba(26,26,46,.05)}
+.move-head{display:flex;align-items:center;gap:20px;padding:20px 28px;cursor:pointer;user-select:none;position:relative}
+.move-head:hover{background:rgba(212,89,42,.02)}
+.move-num{font-family:'Syne',sans-serif;font-size:11px;font-weight:800;color:var(--accent);background:var(--accent-l);width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;letter-spacing:0.03em}
+.move-meta{flex:1}
+.move-meta h3{font-size:17px;font-weight:700;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.move-meta h3 small{font-family:'DM Mono',monospace;font-size:11px;font-weight:400;color:var(--muted);letter-spacing:0.05em}
+.move-head .rating{margin-top:6px}
+.toggle-icon{width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--muted);transition:transform .3s ease;flex-shrink:0}
+.move-card.open .toggle-icon{transform:rotate(180deg)}
+.move-content{max-height:0;overflow:hidden;transition:max-height .4s ease}
+.move-card.open .move-content{max-height:2000px}
+.move-inner{padding:0 28px 28px}
+.purpose-box{background:var(--bg);border-left:3px solid var(--accent);padding:14px 20px;border-radius:0 var(--rs) var(--rs) 0;margin-bottom:24px;font-size:14px;color:var(--ink2)}
+.move-inner h4{font-family:'Syne',sans-serif;font-size:13px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:12px;margin-top:20px}
+.move-inner h4:first-child{margin-top:0}
+.move-inner ul{list-style:none;padding:0;margin-bottom:8px}
+.move-inner ul li{padding:6px 0;padding-left:18px;position:relative;font-size:14.5px;color:var(--ink2)}
+.move-inner ul li::before{content:'';position:absolute;left:0;top:14px;width:8px;height:8px;border-radius:50%;background:var(--accent-l);border:2px solid var(--accent)}
+.training-item{display:flex;align-items:center;gap:10px}
+.training-item .rating{margin-left:auto}
+
+/* ── Tables ── */
+.data-table{width:100%;border-collapse:collapse;font-size:14px;margin-top:4px}
+.data-table thead th{font-family:'Syne',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);padding:10px 14px;text-align:left;border-bottom:2px solid var(--border);background:var(--bg)}
+.data-table thead th:first-child{border-radius:var(--rs) 0 0 0}
+.data-table thead th:last-child{border-radius:0 var(--rs) 0 0}
+.data-table tbody td{padding:11px 14px;border-bottom:1px solid var(--border);color:var(--ink2);vertical-align:middle}
+.data-table tbody tr:last-child td{border-bottom:none}
+.data-table tbody tr:hover{background:rgba(212,89,42,.02)}
+.data-table .exercise-name{font-weight:500;color:var(--ink)}
+.badge{display:inline-block;font-family:'DM Mono',monospace;font-size:10px;font-weight:500;padding:3px 10px;border-radius:99px;letter-spacing:0.04em}
+.badge-5{background:var(--green-l);color:var(--green)}
+.badge-4{background:rgba(37,99,235,.08);color:var(--blue)}
+.badge-3{background:var(--bg);color:var(--muted)}
+.badge-2{background:var(--accent-l);color:var(--accent)}
+.badge-1{background:rgba(197,48,48,.08);color:var(--red)}
+
+/* ── Rating ── */
+.rating{display:inline-flex;gap:3px;align-items:center}
+.rating .seg{width:20px;height:6px;border-radius:3px;background:var(--border);transition:background .2s}
+.rating .seg.on{background:var(--accent)}
+.rating-text{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);margin-left:6px}
+
+/* ── Strength Table ── */
+.strength-table-wrap{overflow-x:auto;margin-top:8px}
+.strength-table{width:100%;border-collapse:collapse;font-size:14px}
+.strength-table thead th{font-family:'Syne',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);padding:12px 16px;text-align:left;border-bottom:2px solid var(--border);background:var(--bg);white-space:nowrap}
+.strength-table thead th:first-child{border-radius:var(--rs) 0 0 0}
+.strength-table thead th:last-child{border-radius:0 var(--rs) 0 0}
+.strength-table tbody td{padding:12px 16px;border-bottom:1px solid var(--border);vertical-align:middle}
+.strength-table tbody tr:last-child td{border-bottom:none}
+.strength-table tbody tr:hover{background:rgba(212,89,42,.02)}
+.strength-table .ex-name{font-weight:600;color:var(--ink);white-space:nowrap}
+.strength-table .mono{font-family:'DM Mono',monospace;font-size:13px;color:var(--ink2)}
+.strength-table .mono-accent{font-family:'DM Mono',monospace;font-size:13px;color:var(--accent);font-weight:500}
+.strength-table .mono-green{font-family:'DM Mono',monospace;font-size:13px;color:var(--green);font-weight:500}
+
+/* ── Ranking Bars ── */
+.ranking-list{display:flex;flex-direction:column;gap:14px;margin-top:8px}
+.rank-item{display:grid;grid-template-columns:160px 1fr auto;align-items:center;gap:20px;padding:14px 20px;background:var(--surface);border-radius:var(--rs);border:1px solid var(--border);transition:transform .2s,box-shadow .2s}
+.rank-item:hover{transform:translateX(4px);box-shadow:0 4px 16px rgba(26,26,46,.05)}
+.rank-name{font-family:'Syne',sans-serif;font-size:14px;font-weight:600;color:var(--ink)}
+.rank-bar-track{height:10px;background:var(--bg);border-radius:5px;overflow:hidden;position:relative}
+.rank-bar-fill{height:100%;border-radius:5px;transition:width 1s ease;position:relative}
+.rank-bar-fill.level5{background:linear-gradient(90deg,var(--green),#2ecc71)}
+.rank-bar-fill.level4{background:linear-gradient(90deg,var(--blue),#5b8def)}
+.rank-bar-fill.level3{background:linear-gradient(90deg,var(--gold),#e8b84a)}
+.rank-stage{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);white-space:nowrap;padding:4px 12px;background:var(--bg);border-radius:99px}
+.rank-stage.highlight{color:var(--accent);background:var(--accent-l)}
+.rank-stage.warn{color:var(--red);background:rgba(197,48,48,.06)}
+
+/* ── Analysis Cards ── */
+.analysis-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:8px}
+.analysis-card{background:var(--surface);border-radius:var(--r);border:1px solid var(--border);padding:28px;position:relative;overflow:hidden}
+.analysis-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px}
+.analysis-card.plateau::before{background:linear-gradient(90deg,var(--gold),var(--accent))}
+.analysis-card.potential::before{background:linear-gradient(90deg,var(--green),var(--blue))}
+.analysis-card h3{font-size:17px;font-weight:700;margin-bottom:6px}
+.analysis-card .sub{font-family:'DM Mono',monospace;font-size:12px;color:var(--muted);margin-bottom:20px}
+.analysis-list{list-style:none;padding:0}
+.analysis-list li{padding:12px 0;border-bottom:1px solid var(--border);font-size:14px}
+.analysis-list li:last-child{border-bottom:none}
+.analysis-list .li-title{font-weight:600;color:var(--ink);margin-bottom:3px}
+.analysis-list .li-desc{color:var(--ink2);font-size:13px}
+.realize-badge{display:inline-block;font-family:'DM Mono',monospace;font-size:11px;padding:2px 8px;border-radius:99px;background:var(--gold-l);color:var(--gold);margin-left:8px}
+
+/* ── Realization Section ── */
+.realize-concept{background:var(--surface);border-radius:var(--r);border:1px solid var(--border);padding:32px;margin-top:8px}
+.realize-concept h3{font-size:18px;font-weight:700;margin-bottom:12px}
+.realize-concept p{font-size:14.5px;color:var(--ink2);margin-bottom:16px;max-width:640px}
+.realize-example{background:var(--bg);border-radius:var(--rs);padding:20px 24px;margin-top:16px}
+.realize-example h4{font-family:'Syne',sans-serif;font-size:13px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:12px}
+.realize-phases{display:flex;gap:12px;margin-top:16px;flex-wrap:wrap}
+.phase{padding:10px 18px;border-radius:var(--rs);font-size:13px;border:1px solid var(--border);background:var(--surface)}
+.phase strong{display:block;font-family:'Syne',sans-serif;font-size:12px;margin-bottom:2px}
+.phase.tech{border-color:var(--blue);color:var(--blue)}
+.phase.tech strong{color:var(--blue)}
+.phase.plateau-phase{border-color:var(--gold);color:var(--gold)}
+.phase.plateau-phase strong{color:var(--gold)}
+.phase.grow{border-color:var(--green);color:var(--green)}
+.phase.grow strong{color:var(--green)}
+
+/* ── Footer ── */
+.page-footer{margin-left:220px;padding:32px 48px;border-top:1px solid var(--border);font-family:'DM Mono',monospace;font-size:12px;color:var(--muted);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+
+/* ── Animate on Scroll ── */
+.ani{opacity:0;transform:translateY(24px);transition:opacity .6s ease,transform .6s ease}
+.ani.vis{opacity:1;transform:translateY(0)}
+.ani-d1{transition-delay:.1s}
+.ani-d2{transition-delay:.2s}
+.ani-d3{transition-delay:.3s}
+.ani-d4{transition-delay:.4s}
+.ani-d5{transition-delay:.5s}
+
+/* ── Responsive ── */
+@media(max-width:1024px){
+  .sidebar{transform:translateX(-100%);transition:transform .3s ease}
+  .sidebar.open{transform:translateX(0)}
+  .sidebar-overlay.open{display:block}
+  .mobile-toggle{display:flex}
+  .main,.page-footer{margin-left:0}
+  .hero{padding:72px 28px 56px}
+  section{padding:48px 28px 0}
+  .hero-metrics{gap:16px}
+  .metric{padding:12px 18px}
+  .metric-val{font-size:24px}
+  .analysis-grid{grid-template-columns:1fr}
+  .rank-item{grid-template-columns:140px 1fr auto;gap:12px;padding:12px 16px}
+}
+@media(max-width:640px){
+  .goals-grid{grid-template-columns:1fr}
+  .hero-metrics{flex-direction:column}
+  .rank-item{grid-template-columns:1fr;gap:8px}
+  .rank-stage{justify-self:start}
+  .strength-table{font-size:13px}
+  .strength-table thead th,.strength-table tbody td{padding:10px 10px}
+  section{padding:36px 20px 0}
+  .hero{padding:64px 20px 44px}
+}
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<button class="mobile-toggle" id="menuBtn" aria-label="菜单">
+  <span></span><span></span><span></span>
+</button>
+<div class="sidebar-overlay" id="overlay"></div>
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <span class="brand-mark">PF</span>
+    <span class="brand-text">体能说明书</span>
+  </div>
+  <ul class="nav-list">
+    <li><a href="#hero" class="active">概览</a></li>
+    <li><a href="#goals">训练目标</a></li>
+    <li><a href="#movements">动作分类</a></li>
+    <li><a href="#strength">力量兑现</a></li>
+    <li><a href="#ranking">能力排序</a></li>
+    <li><a href="#analysis">平台与潜力</a></li>
+    <li><a href="#realization">兑现率概念</a></li>
+  </ul>
+  <div class="sidebar-footer">
+    <div>V1.0 · 2026.07</div>
+    <div style="margin-top:4px">每 3–6 月更新</div>
+  </div>
+</nav>
+
+<!-- Hero -->
+<div class="main">
+<section class="hero" id="hero">
+  <div class="hero-inner">
+    <div class="hero-badge">Version 1.0 &middot; 2026 年 7 月建档</div>
+    <h1>个人体能说明书</h1>
+    <p class="hero-sub">街健 &middot; 力量 &middot; 爆发 &middot; 骑行</p>
+    <div class="hero-metrics">
+      <div class="metric">
+        <span class="metric-val">70</span>
+        <span class="metric-unit">kg 体重</span>
+      </div>
+      <div class="metric">
+        <span class="metric-val">8</span>
+        <span class="metric-unit">动作模式</span>
+      </div>
+      <div class="metric">
+        <span class="metric-val">9</span>
+        <span class="metric-unit">核心动作</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Goals -->
+<section id="goals">
+  <div class="section-label">Section 01</div>
+  <h2 class="section-title">训练目标</h2>
+  <p class="section-desc">按优先级排列的六大训练方向，星级越高代表在你的体系中权重越大。</p>
+  <div class="goals-grid">
+    <div class="goal-card ani" data-priority="5">
+      <div class="goal-rank">#1</div>
+      <div class="goal-name">最大力量</div>
+      <div class="goal-bar"><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span></div>
+    </div>
+    <div class="goal-card ani ani-d1" data-priority="5">
+      <div class="goal-rank">#2</div>
+      <div class="goal-name">爆发力</div>
+      <div class="goal-bar"><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span></div>
+    </div>
+    <div class="goal-card ani ani-d2" data-priority="5">
+      <div class="goal-rank">#3</div>
+      <div class="goal-name">街健技能</div>
+      <div class="goal-bar"><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span></div>
+    </div>
+    <div class="goal-card ani ani-d3" data-priority="5">
+      <div class="goal-rank">#4</div>
+      <div class="goal-name">核心稳定</div>
+      <div class="goal-bar"><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span></div>
+    </div>
+    <div class="goal-card ani ani-d4" data-priority="4">
+      <div class="goal-rank">#5</div>
+      <div class="goal-name">骑行能力</div>
+      <div class="goal-bar"><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span><span class="seg"></span></div>
+    </div>
+    <div class="goal-card ani ani-d5" data-priority="2">
+      <div class="goal-rank">#6</div>
+      <div class="goal-name">肌肥大</div>
+      <div class="goal-bar"><span class="seg on"></span><span class="seg on"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span></div>
+    </div>
+  </div>
+</section>
+
+<!-- Movements -->
+<section id="movements">
+  <div class="section-label">Section 02</div>
+  <h2 class="section-title">人体动作分类</h2>
+  <p class="section-desc">覆盖全身的 8 个基本运动模式。展开查看详细动作推荐与评级。</p>
+
+  <!-- 01 Vertical Push -->
+  <div class="move-card ani">
+    <div class="move-head" onclick="toggleCard(this)">
+      <span class="move-num">01</span>
+      <div class="move-meta">
+        <h3>垂直推 <small>Vertical Push</small></h3>
+        <div class="rating">
+          <span class="seg on"></span><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span>
+        </div>
+      </div>
+      <span class="toggle-icon">▾</span>
+    </div>
+    <div class="move-content">
+      <div class="move-inner">
+        <div class="purpose-box">过顶力量、肩稳定、爆发能力</div>
+        <h4>你的训练</h4>
+        <ul>
+          <li class="training-item">单手站姿推肩 <span class="rating"><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span></span></li>
+          <li class="training-item">单手过顶行走 <span class="rating"><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span></span></li>
+        </ul>
+        <h4>同类动作推荐</h4>
+        <table class="data-table">
+          <thead><tr><th>动作</th><th>推荐</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td class="exercise-name">单手站姿哑铃推肩</td><td><span class="badge badge-5">★★★★★</span></td><td>最符合你的目标，兼顾力量、稳定和抗侧屈。</td></tr>
+            <tr><td class="exercise-name">双手站姿杠铃推肩</td><td><span class="badge badge-5">★★★★★</span></td><td>更适合突破最大力量平台，渐进加重方便。</td></tr>
+            <tr><td class="exercise-name">坐姿推肩</td><td><span class="badge badge-2">★★☆☆☆</span></td><td>稳定性需求低，不符合你的主要目标。</td></tr>
+            <tr><td class="exercise-name">Push Press</td><td><span class="badge badge-4">★★★★☆</span></td><td>强调爆发力，可作为后期专项。</td></tr>
+            <tr><td class="exercise-name">阿诺德推举</td><td><span class="badge badge-1">★☆☆☆☆</span></td><td>偏肌肥大，对你的目标帮助有限。</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- 02 Horizontal Push -->
+  <div class="move-card ani">
+    <div class="move-head" onclick="toggleCard(this)">
+      <span class="move-num">02</span>
+      <div class="move-meta">
+        <h3>水平推 <small>Horizontal Push</small></h3>
+        <div class="rating"><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span></div>
+      </div>
+      <span class="toggle-icon">▾</span>
+    </div>
+    <div class="move-content">
+      <div class="move-inner">
+        <div class="purpose-box">前链力量、肩胛控制</div>
+        <h4>你的训练</h4>
+        <ul>
+          <li>伪俄挺</li>
+          <li>双杠臂屈伸</li>
+        </ul>
+        <h4>同类动作推荐</h4>
+        <table class="data-table">
+          <thead><tr><th>动作</th><th>推荐</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td class="exercise-name">腰间俯卧撑进阶俄挺</td><td><span class="badge badge-5">★★★★★</span></td><td>与俄挺、倒立、肩稳定直接相关。</td></tr>
+            <tr><td class="exercise-name">双杠臂屈伸</td><td><span class="badge badge-5">★★★★★</span></td><td>最大推力、双力臂转接。</td></tr>
+            <tr><td class="exercise-name">卧推</td><td><span class="badge badge-2">★★☆☆☆</span></td><td>最大力量高，但专项转化一般。</td></tr>
+            <tr><td class="exercise-name">俯卧撑</td><td><span class="badge badge-3">★★★☆☆</span></td><td>热身、恢复可用。</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- 03 Vertical Pull -->
+  <div class="move-card ani">
+    <div class="move-head" onclick="toggleCard(this)">
+      <span class="move-num">03</span>
+      <div class="move-meta">
+        <h3>垂直拉 <small>Vertical Pull</small></h3>
+        <div class="rating"><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span></div>
+      </div>
+      <span class="toggle-icon">▾</span>
+    </div>
+    <div class="move-content">
+      <div class="move-inner">
+        <div class="purpose-box">双力臂、攀爬、背阔力量</div>
+        <h4>你的训练</h4>
+        <ul>
+          <li>双力臂</li>
+          <li>引体</li>
+          <li>高位下拉</li>
+        </ul>
+        <h4>同类动作推荐</h4>
+        <table class="data-table">
+          <thead><tr><th>动作</th><th>推荐</th></tr></thead>
+          <tbody>
+            <tr><td class="exercise-name">双力臂</td><td><span class="badge badge-5">★★★★★</span></td></tr>
+            <tr><td class="exercise-name">爆发引体</td><td><span class="badge badge-5">★★★★★</span></td></tr>
+            <tr><td class="exercise-name">负重引体</td><td><span class="badge badge-5">★★★★★</span></td></tr>
+            <tr><td class="exercise-name">高位下拉</td><td><span class="badge badge-4">★★★★☆</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- 04 Horizontal Pull -->
+  <div class="move-card ani">
+    <div class="move-head" onclick="toggleCard(this)">
+      <span class="move-num">04</span>
+      <div class="move-meta">
+        <h3>水平拉 <small>Horizontal Pull</small></h3>
+        <div class="rating"><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span></div>
+      </div>
+      <span class="toggle-icon">▾</span>
+    </div>
+    <div class="move-content">
+      <div class="move-inner">
+        <div class="purpose-box">上背厚度、肩胛控制</div>
+        <h4>你的训练</h4>
+        <ul><li>绳索划船</li></ul>
+        <h4>同类动作推荐</h4>
+        <table class="data-table">
+          <thead><tr><th>动作</th><th>推荐</th></tr></thead>
+          <tbody>
+            <tr><td class="exercise-name">绳索划船</td><td><span class="badge badge-5">★★★★★</span></td></tr>
+            <tr><td class="exercise-name">杠铃划船</td><td><span class="badge badge-5">★★★★★</span></td></tr>
+            <tr><td class="exercise-name">潘德雷划船</td><td><span class="badge badge-5">★★★★★</span></td></tr>
+            <tr><td class="exercise-name">哑铃划船</td><td><span class="badge badge-4">★★★★☆</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- 05 Squat -->
+  <div class="move-card ani">
+    <div class="move-head" onclick="toggleCard(this)">
+      <span class="move-num">05</span>
+      <div class="move-meta">
+        <h3>深蹲模式 <small>Squat Pattern</small></h3>
+        <div class="rating"><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span></div>
+      </div>
+      <span class="toggle-icon">▾</span>
+    </div>
+    <div class="move-content">
+      <div class="move-inner">
+        <div class="purpose-box">下肢力量、核心</div>
+        <h4>你的训练</h4>
+        <ul>
+          <li>泽奇深蹲</li>
+          <li>保加利亚分腿蹲</li>
+        </ul>
+        <h4>同类动作推荐</h4>
+        <table class="data-table">
+          <thead><tr><th>动作</th><th>推荐</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td class="exercise-name">泽奇深蹲</td><td><span class="badge badge-5">★★★★★</span></td><td>核心、上背、腿部整体发展最佳，与你目标高度契合。</td></tr>
+            <tr><td class="exercise-name">保加利亚分腿蹲</td><td><span class="badge badge-5">★★★★★</span></td><td>单腿力量、稳定性，对骑行和街健价值极高。</td></tr>
+            <tr><td class="exercise-name">后背深蹲</td><td><span class="badge badge-4">★★★★☆</span></td><td>最大力量潜力更高，但专项性略低。</td></tr>
+            <tr><td class="exercise-name">前蹲</td><td><span class="badge badge-4">★★★★☆</span></td><td>更偏股四头和上背。</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- 06 Hip Hinge -->
+  <div class="move-card ani">
+    <div class="move-head" onclick="toggleCard(this)">
+      <span class="move-num">06</span>
+      <div class="move-meta">
+        <h3>髋主导 <small>Hip Hinge</small></h3>
+        <div class="rating"><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span><span class="seg"></span></div>
+      </div>
+      <span class="toggle-icon">▾</span>
+    </div>
+    <div class="move-content">
+      <div class="move-inner">
+        <h4>你的训练</h4>
+        <ul>
+          <li>哑铃抓举</li>
+          <li>山羊挺身</li>
+        </ul>
+        <h4>推荐后续加入</h4>
+        <ul>
+          <li>潘德雷划船</li>
+          <li>RDL（技术训练）</li>
+          <li>壶铃摆动</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- 07 Carry -->
+  <div class="move-card ani">
+    <div class="move-head" onclick="toggleCard(this)">
+      <span class="move-num">07</span>
+      <div class="move-meta">
+        <h3>搬运 <small>Carry</small> <span class="badge badge-5" style="font-size:9px;vertical-align:middle;margin-left:4px">特色项目</span></h3>
+        <div class="rating"><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span></div>
+      </div>
+      <span class="toggle-icon">▾</span>
+    </div>
+    <div class="move-content">
+      <div class="move-inner">
+        <div class="purpose-box">核心、握力、肩稳定、全身整合 — 这是你的特色项目。</div>
+        <h4>你的训练</h4>
+        <ul>
+          <li>单手过顶行走</li>
+          <li>单手农夫</li>
+          <li>双手农夫</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- 08 Core -->
+  <div class="move-card ani">
+    <div class="move-head" onclick="toggleCard(this)">
+      <span class="move-num">08</span>
+      <div class="move-meta">
+        <h3>核心 <small>Core</small> <span class="badge badge-5" style="font-size:9px;vertical-align:middle;margin-left:4px">已非常完整</span></h3>
+        <div class="rating"><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span></div>
+      </div>
+      <span class="toggle-icon">▾</span>
+    </div>
+    <div class="move-content">
+      <div class="move-inner">
+        <h4>你的训练</h4>
+        <ul>
+          <li>举腿碰杠</li>
+          <li>雨刷器</li>
+          <li>单臂悬挂</li>
+        </ul>
+        <p style="margin-top:16px;font-size:14px;color:var(--ink2)">核心训练已经非常完整，保持即可。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Strength Realization -->
+<section id="strength">
+  <div class="section-label">Section 03</div>
+  <h2 class="section-title">当前力量兑现情况</h2>
+  <p class="section-desc">2026 年 7 月数据。长期潜力基于 70kg 体重、持续多年系统训练且无重大伤病的估计。</p>
+  <div class="strength-table-wrap ani">
+    <table class="strength-table">
+      <thead>
+        <tr>
+          <th>动作</th>
+          <th>当前</th>
+          <th>快速兑现 (2–4月)</th>
+          <th>长期潜力 (2–5年)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="ex-name">哑铃抓举</td>
+          <td class="mono">28 &times; 5</td>
+          <td class="mono-accent">30–32 &times; 5</td>
+          <td class="mono-green">36kg &times; 3–5</td>
+        </tr>
+        <tr>
+          <td class="ex-name">保加利亚分腿蹲</td>
+          <td class="mono">44 &times; 5</td>
+          <td class="mono-accent">50kg &times; 5</td>
+          <td class="mono-green">60kg &times; 5</td>
+        </tr>
+        <tr>
+          <td class="ex-name">泽奇深蹲</td>
+          <td class="mono">80 &times; 6</td>
+          <td class="mono-accent">90kg &times; 5</td>
+          <td class="mono-green">95–100kg &times; 5</td>
+        </tr>
+        <tr>
+          <td class="ex-name">单手站姿推肩</td>
+          <td class="mono">22 &times; 5</td>
+          <td class="mono-accent">24–26kg &times; 5</td>
+          <td class="mono-green">26–28kg &times; 5</td>
+        </tr>
+        <tr>
+          <td class="ex-name">高位下拉</td>
+          <td class="mono">100 &times; 5</td>
+          <td class="mono-accent">110kg &times; 5</td>
+          <td class="mono-green">115–120kg &times; 5</td>
+        </tr>
+        <tr>
+          <td class="ex-name">绳索划船</td>
+          <td class="mono">100 &times; 5</td>
+          <td class="mono-accent">105kg &times; 5</td>
+          <td class="mono-green">110–115kg &times; 5</td>
+        </tr>
+        <tr>
+          <td class="ex-name">单手过顶行走</td>
+          <td class="mono">28kg &times; 25s</td>
+          <td class="mono-accent">30kg &times; 30s</td>
+          <td class="mono-green">32–36kg &times; 30–40s</td>
+        </tr>
+        <tr>
+          <td class="ex-name">双手农夫</td>
+          <td class="mono">60kg &times; 20s</td>
+          <td class="mono-accent">70kg &times; 30s</td>
+          <td class="mono-green">75–80kg &times; 30–40s</td>
+        </tr>
+        <tr>
+          <td class="ex-name">腿弯举</td>
+          <td class="mono">27 &times; 8</td>
+          <td class="mono-accent">40–45kg &times; 8</td>
+          <td class="mono-green">55–60kg &times; 5</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p style="margin-top:16px;font-size:13px;color:var(--muted);font-style:italic" class="ani">
+    * 长期潜力不是生理极限，而是较高概率能达到的个人水平。
+  </p>
+</section>
+
+<!-- Ability Ranking -->
+<section id="ranking">
+  <div class="section-label">Section 04</div>
+  <h2 class="section-title">能力强弱排序</h2>
+  <p class="section-desc">从优势项目到当前短板，一览你的体能全景。</p>
+  <div class="ranking-list">
+    <div class="rank-item ani">
+      <div class="rank-name">核心稳定</div>
+      <div class="rank-bar-track"><div class="rank-bar-fill level5" data-width="100"></div></div>
+      <span class="rank-stage highlight">优势项目</span>
+    </div>
+    <div class="rank-item ani">
+      <div class="rank-name">相对拉力</div>
+      <div class="rank-bar-track"><div class="rank-bar-fill level5" data-width="100"></div></div>
+      <span class="rank-stage highlight">接近成熟</span>
+    </div>
+    <div class="rank-item ani">
+      <div class="rank-name">肩稳定</div>
+      <div class="rank-bar-track"><div class="rank-bar-fill level5" data-width="100"></div></div>
+      <span class="rank-stage highlight">优势项目</span>
+    </div>
+    <div class="rank-item ani">
+      <div class="rank-name">爆发力</div>
+      <div class="rank-bar-track"><div class="rank-bar-fill level4" data-width="82"></div></div>
+      <span class="rank-stage">持续增长</span>
+    </div>
+    <div class="rank-item ani">
+      <div class="rank-name">单腿力量</div>
+      <div class="rank-bar-track"><div class="rank-bar-fill level4" data-width="80"></div></div>
+      <span class="rank-stage">快速增长</span>
+    </div>
+    <div class="rank-item ani">
+      <div class="rank-name">下肢绝对力量</div>
+      <div class="rank-bar-track"><div class="rank-bar-fill level4" data-width="78"></div></div>
+      <span class="rank-stage">快速增长</span>
+    </div>
+    <div class="rank-item ani">
+      <div class="rank-name">握力耐力</div>
+      <div class="rank-bar-track"><div class="rank-bar-fill level4" data-width="76"></div></div>
+      <span class="rank-stage">稳步提升</span>
+    </div>
+    <div class="rank-item ani">
+      <div class="rank-name">过顶力量</div>
+      <div class="rank-bar-track"><div class="rank-bar-fill level3" data-width="60"></div></div>
+      <span class="rank-stage">接近平台</span>
+    </div>
+    <div class="rank-item ani">
+      <div class="rank-name">腰背恢复能力</div>
+      <div class="rank-bar-track"><div class="rank-bar-fill level3" data-width="55"></div></div>
+      <span class="rank-stage warn">当前短板</span>
+    </div>
+  </div>
+</section>
+
+<!-- Analysis -->
+<section id="analysis">
+  <div class="section-label">Section 05</div>
+  <h2 class="section-title">平台与潜力分析</h2>
+  <p class="section-desc">识别瓶颈、把握增长窗口，让你的训练资源投在回报最高的地方。</p>
+  <div class="analysis-grid">
+    <div class="analysis-card plateau ani">
+      <h3>接近平台的动作</h3>
+      <div class="sub">兑现度 &ge; 85%，需要结构调整而非单纯增量</div>
+      <ul class="analysis-list">
+        <li>
+          <div class="li-title">单手站姿推肩 <span class="realize-badge">兑现 90%</span></div>
+          <div class="li-desc">预计需通过训练结构或动作变化（如加入杠铃推肩）突破，而非单纯增加训练量。</div>
+        </li>
+        <li>
+          <div class="li-title">高位下拉 <span class="realize-badge">兑现 85–90%</span></div>
+          <div class="li-desc">短期更多是巩固质量而非大幅加重。</div>
+        </li>
+        <li>
+          <div class="li-title">绳索划船 <span class="realize-badge">兑现 85–90%</span></div>
+          <div class="li-desc">已进入缓慢增长阶段。</div>
+        </li>
+      </ul>
+    </div>
+    <div class="analysis-card potential ani">
+      <h3>增长潜力最大的动作</h3>
+      <div class="sub">技术或神经适应仍有明显空间</div>
+      <ul class="analysis-list">
+        <li>
+          <div class="li-title">保加利亚分腿蹲</div>
+          <div class="li-desc">技术仍在成熟，距离长期水平还有较大空间。</div>
+        </li>
+        <li>
+          <div class="li-title">泽奇深蹲</div>
+          <div class="li-desc">近期增长最快，但需优先解决腰背恢复问题。</div>
+        </li>
+        <li>
+          <div class="li-title">哑铃抓举</div>
+          <div class="li-desc">动作熟练度和爆发技术还有明显提升空间。</div>
+        </li>
+        <li>
+          <div class="li-title">过顶行走 / 农夫</div>
+          <div class="li-desc">主要受握力和核心耐力限制，仍可持续提高。</div>
+        </li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- Realization Rate -->
+<section id="realization">
+  <div class="section-label">Section 06</div>
+  <h2 class="section-title">兑现率概念</h2>
+  <p class="section-desc">为每个动作维护三项数据，帮你判断"练什么回报最高"。</p>
+  <div class="realize-concept ani">
+    <h3>为什么需要兑现率？</h3>
+    <p>比单纯记录训练重量更有价值 — 它帮助你判断：</p>
+    <div class="realize-phases">
+      <div class="phase tech">
+        <strong>技术兑现阶段</strong>
+        靠技术和神经适应就能继续提高
+      </div>
+      <div class="phase plateau-phase">
+        <strong>平台阶段</strong>
+        需要增加肌肉、长期周期化或调整结构才能突破
+      </div>
+      <div class="phase grow">
+        <strong>增长窗口</strong>
+        当前动作有大量未兑现潜力
+      </div>
+    </div>
+    <div class="realize-example">
+      <h4>示例 — 泽奇深蹲</h4>
+      <table class="data-table" style="margin-top:4px">
+        <thead>
+          <tr>
+            <th>动作</th>
+            <th>当前</th>
+            <th>快速兑现目标</th>
+            <th>长期潜力</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="exercise-name">泽奇深蹲</td>
+            <td><span style="font-family:'DM Mono',monospace;font-size:13px">80 &times; 6</span></td>
+            <td><span style="font-family:'DM Mono',monospace;font-size:13px;color:var(--accent)">90 &times; 5</span></td>
+            <td><span style="font-family:'DM Mono',monospace;font-size:13px;color:var(--green)">95–100 &times; 5</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin-top:20px;font-size:13px;color:var(--muted)">
+      建议每 <strong>3–6 个月</strong> 更新一次这份文档，而非每次训练后修改。这样更能反映你长期能力的发展趋势。
+    </p>
+  </div>
+</section>
+</div>
+
+<!-- Footer -->
+<footer class="page-footer">
+  <span>个人体能说明书 V1.0</span>
+  <span>建档 2026.07 &middot; 每 3–6 月更新</span>
+</footer>
+
+<script>
+// ── Toggle Movement Cards ──
+function toggleCard(head){
+  const card = head.closest('.move-card');
+  card.classList.toggle('open');
+}
+
+// ── Mobile Sidebar ──
+const menuBtn = document.getElementById('menuBtn');
+const sidebar = document.getElementById('sidebar');
+const overlay = document.getElementById('overlay');
+
+menuBtn.addEventListener('click',()=>{
+  sidebar.classList.toggle('open');
+  overlay.classList.toggle('open');
+});
+overlay.addEventListener('click',()=>{
+  sidebar.classList.remove('open');
+  overlay.classList.remove('open');
+});
+document.querySelectorAll('.nav-list a').forEach(a=>{
+  a.addEventListener('click',()=>{
+    sidebar.classList.remove('open');
+    overlay.classList.remove('open');
+  });
+});
+
+// ── Scroll Animations ──
+const obs = new IntersectionObserver((entries)=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      e.target.classList.add('vis');
+      // Animate ranking bars
+      const bars = e.target.querySelectorAll('.rank-bar-fill');
+      bars.forEach(b=>{ b.style.width = b.dataset.width + '%'; });
+      // If it's a ranking list parent, also check children
+      if(e.target.classList.contains('ranking-list')){
+        e.target.querySelectorAll('.rank-bar-fill').forEach(b=>{ b.style.width = b.dataset.width + '%'; });
+      }
+    }
+  });
+},{threshold:0.15});
+
+document.querySelectorAll('.ani').forEach(el=>obs.observe(el));
+
+// Also observe individual rank items for their bars
+document.querySelectorAll('.rank-item').forEach(item=>{
+  const bar = item.querySelector('.rank-bar-fill');
+  if(bar) bar.style.width = '0%';
+  const itemObs = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting && bar){
+        setTimeout(()=>{ bar.style.width = bar.dataset.width + '%'; },200);
+      }
+    });
+  },{threshold:0.3});
+  itemObs.observe(item);
+});
+
+// ── Active Nav on Scroll ──
+const sections = document.querySelectorAll('section[id]');
+const navLinks = document.querySelectorAll('.nav-list a');
+
+const navObs = new IntersectionObserver((entries)=>{
+  entries.forEach(entry=>{
+    if(entry.isIntersecting){
+      const id = entry.target.id;
+      navLinks.forEach(l=>{
+        l.classList.toggle('active', l.getAttribute('href') === '#'+id);
+      });
+    }
+  });
+},{threshold:0.2, rootMargin:'-10% 0px -70% 0px'});
+
+sections.forEach(s=>navObs.observe(s));
+
+// ── Auto-open first movement card after a delay ──
+setTimeout(()=>{
+  const first = document.querySelector('.move-card');
+  if(first) first.classList.add('open');
+},800);
+</script>
+</body>
+</html>
