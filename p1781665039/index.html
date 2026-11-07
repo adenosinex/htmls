@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>身体数据报告</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg0:#ffffff;--bg1:#f5f4f0;--bg2:#eeecea;
+  --t0:#1a1a18;--t1:#6b6a65;
+  --bd:rgba(0,0,0,0.12);--bdm:rgba(0,0,0,0.22);
+  --rm:8px;--rl:12px;--rxl:16px;
+  --drawer-w:320px;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg0:#1e1e1c;--bg1:#282826;--bg2:#1c1c1a;
+  --t0:#f0ede8;--t1:#9a9992;
+  --bd:rgba(255,255,255,0.11);--bdm:rgba(255,255,255,0.2);
+}}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;background:var(--bg2);color:var(--t0);min-height:100vh;padding:2rem 1rem;transition:padding-right .3s}
+body.drawer-open{overflow:hidden}
+.page{max-width:680px;margin:0 auto}
+
+/* ── floating edit button ── */
+.fab{position:fixed;bottom:1.5rem;right:1.5rem;z-index:200;width:48px;height:48px;border-radius:50%;background:var(--t0);color:var(--bg0);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 2px 12px rgba(0,0,0,.18);transition:transform .15s}
+.fab:hover{transform:scale(1.08)}
+.fab svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* ── drawer overlay ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:300;opacity:0;pointer-events:none;transition:opacity .25s}
+.overlay.open{opacity:1;pointer-events:auto}
+
+/* ── drawer panel ── */
+.drawer{position:fixed;top:0;right:0;height:100%;width:var(--drawer-w);background:var(--bg0);border-left:0.5px solid var(--bd);z-index:400;transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column}
+.drawer.open{transform:translateX(0)}
+.drawer-head{padding:1.1rem 1.25rem;border-bottom:0.5px solid var(--bd);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.drawer-head h2{font-size:15px;font-weight:500}
+.drawer-head-actions{display:flex;gap:8px;align-items:center}
+.btn-reset{font-size:11px;color:var(--t1);background:none;border:0.5px solid var(--bd);border-radius:20px;padding:3px 10px;cursor:pointer}
+.btn-reset:hover{background:var(--bg1)}
+.btn-close{width:28px;height:28px;border-radius:50%;background:var(--bg1);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--t1);font-size:16px}
+.btn-close:hover{background:var(--bd)}
+.drawer-body{flex:1;overflow-y:auto;padding:1rem 1.25rem;display:flex;flex-direction:column;gap:1.1rem}
+.drawer-footer{padding:.9rem 1.25rem;border-top:0.5px solid var(--bd);flex-shrink:0}
+.saved-badge{font-size:11px;color:var(--t1);text-align:center;min-height:16px;transition:opacity .3s}
+
+/* field groups */
+.field-group-title{font-size:10px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--t1);margin-bottom:.4rem;margin-top:.3rem}
+.field-row{display:flex;align-items:center;gap:10px}
+.field-row label{font-size:13px;color:var(--t0);min-width:64px;flex-shrink:0}
+.field-row input[type=number]{flex:1;height:34px;border:0.5px solid var(--bdm);border-radius:var(--rm);background:var(--bg1);color:var(--t0);font-size:14px;font-weight:500;padding:0 10px;outline:none;-moz-appearance:textfield}
+.field-row input[type=number]::-webkit-inner-spin-button,.field-row input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none}
+.field-row input[type=number]:focus{border-color:var(--bdm);background:var(--bg0);box-shadow:0 0 0 3px rgba(127,119,221,.15)}
+.field-row .unit-badge{font-size:11px;color:var(--t1);min-width:24px;text-align:left}
+.field-row input[type=range]{flex:1;accent-color:var(--t0)}
+.field-row .range-val{font-size:13px;font-weight:500;min-width:34px;text-align:right}
+
+/* main layout */
+.header{display:flex;align-items:center;gap:1.25rem;margin-bottom:2rem;background:var(--bg0);border-radius:var(--rxl);padding:1.25rem 1.5rem;border:0.5px solid var(--bd)}
+.avatar{width:64px;height:64px;border-radius:50%;background:var(--bg1);border:1.5px solid var(--bdm);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:500;color:var(--t1);flex-shrink:0}
+.header-info h1{font-size:20px;font-weight:500}
+.header-info p{font-size:13px;color:var(--t1);margin-top:4px}
+.sec{font-size:11px;font-weight:500;color:var(--t1);letter-spacing:.08em;text-transform:uppercase;margin:1.75rem 0 .75rem}
+.card{background:var(--bg0);border:0.5px solid var(--bd);border-radius:var(--rl);padding:.9rem 1rem}
+.card-lg{background:var(--bg0);border:0.5px solid var(--bd);border-radius:var(--rl);padding:1rem 1.25rem}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.lbl{font-size:12px;color:var(--t1);margin-bottom:5px}
+.val{font-size:24px;font-weight:500;line-height:1}
+.unit{font-size:13px;font-weight:400;color:var(--t1);margin-left:2px}
+.bmi-hd{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:.9rem}
+.bmi-t{font-size:13px;color:var(--t1)}
+.bmi-tag{font-size:11px;font-weight:500;padding:2px 8px;border-radius:20px;margin-left:8px;vertical-align:middle}
+.tag-warn{color:#3B6D11;background:#EAF3DE}.tag-ok{color:#185FA5;background:#E6F1FB}.tag-danger{color:#A32D2D;background:#FCEBEB}
+@media(prefers-color-scheme:dark){.tag-warn{background:#27500A;color:#C0DD97}.tag-ok{background:#0C447C;color:#B5D4F4}.tag-danger{background:#791F1F;color:#F7C1C1}}
+.bmi-track{height:8px;border-radius:4px;background:linear-gradient(to right,#85B7EB 0%,#97C459 30%,#FAC775 62%,#F09595 100%);position:relative;margin-bottom:8px}
+.bmi-marker{position:absolute;top:-4px;width:16px;height:16px;border-radius:50%;background:var(--bg0);border:2.5px solid #639922;transform:translateX(-50%);transition:left .3s}
+.bmi-scale{display:flex;justify-content:space-between;font-size:10px;color:var(--t1)}
+.body-sec{background:var(--bg0);border:0.5px solid var(--bd);border-radius:var(--rl);padding:1.25rem;display:flex;gap:1.5rem;align-items:flex-start}
+.meas-list{flex:1;display:flex;flex-direction:column;gap:9px;padding-top:4px}
+.mrow{display:flex;align-items:center;gap:10px}
+.mdot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.mname{font-size:12px;color:var(--t1);min-width:52px}
+.mbg{flex:1;height:5px;background:var(--bd);border-radius:3px;overflow:hidden}
+.mbar{height:100%;border-radius:3px;transition:width .35s}
+.mval{font-size:12px;font-weight:500;min-width:46px;text-align:right}
+.ratio-val{font-size:22px;font-weight:500}
+.ratio-sub{font-size:11px;color:var(--t1);margin-top:4px}
+.ok{color:#3B6D11}
+@media(prefers-color-scheme:dark){.ok{color:#97C459}}
+.tab-bar{display:flex;gap:6px;margin-bottom:1rem}
+.tab-btn{font-size:12px;padding:5px 14px;border-radius:20px;border:0.5px solid var(--bd);background:transparent;color:var(--t1);cursor:pointer;transition:all .15s}
+.tab-btn.active{background:var(--t0);color:var(--bg0);border-color:transparent}
+.scenario{display:none}.scenario.active{display:block}
+.chart-wrap{position:relative;width:100%;height:200px;margin-top:.5rem}
+.timeline{display:flex;flex-direction:column;gap:10px;margin-top:.5rem}
+.tl-item{display:flex;gap:12px;align-items:flex-start}
+.tl-dot-col{display:flex;flex-direction:column;align-items:center}
+.tl-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:3px}
+.tl-line{width:1.5px;flex:1;min-height:16px;background:var(--bd)}
+.tl-time{font-size:11px;color:var(--t1);margin-bottom:2px}
+.tl-text{font-size:13px;line-height:1.5}
+.footer{font-size:11px;color:var(--t1);text-align:center;margin-top:2rem;padding-bottom:1rem}
+.local-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#1D9E75;margin-right:5px;vertical-align:middle}
+</style>
+</head>
+<body>
+<div class="page" id="app"></div>
+
+<!-- FAB -->
+<button class="fab" id="fab-btn" aria-label="编辑数据">
+  <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+</button>
+
+<!-- Overlay -->
+<div class="overlay" id="overlay"></div>
+
+<!-- Drawer -->
+<div class="drawer" id="drawer" role="dialog" aria-label="编辑身体参数">
+  <div class="drawer-head">
+    <h2>编辑身体参数</h2>
+    <div class="drawer-head-actions">
+      <button class="btn-reset" id="btn-reset">恢复默认</button>
+      <button class="btn-close" id="btn-close" aria-label="关闭">✕</button>
+    </div>
+  </div>
+  <div class="drawer-body" id="drawer-body"></div>
+  <div class="drawer-footer">
+    <div class="saved-badge" id="saved-badge"></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+/* ═══════════════════════════════════════════════════════
+   ① 模板默认值 — 修改这里更新默认数据
+   ═══════════════════════════════════════════════════════ */
+const DEFAULTS = {
+  age: 27, sex: '男', height: 165, weight: 69.5,
+  measures: {
+    neck:36, chest:95, waist:77, hip:97,
+    upperArm:33, thighMid:51, thighRoot:56,
+    shoulder:45, shoulderCirc:120, head:58,
+  }
+};
+const LS_KEY = 'body_report_v1';
+
+/* ── 字段元信息 ── */
+const FIELD_META = {
+  age:          {label:'年龄',   unit:'岁', min:10,  max:99,  step:1,   group:'基础'},
+  height:       {label:'身高',   unit:'cm', min:140, max:220, step:0.5, group:'基础'},
+  weight:       {label:'体重',   unit:'kg', min:30,  max:200, step:0.5, group:'基础'},
+  neck:         {label:'脖子',   unit:'cm', min:25,  max:65,  step:0.5, group:'围度'},
+  chest:        {label:'胸围',   unit:'cm', min:60,  max:160, step:0.5, group:'围度'},
+  waist:        {label:'腰围',   unit:'cm', min:50,  max:150, step:0.5, group:'围度'},
+  hip:          {label:'臀围',   unit:'cm', min:60,  max:160, step:0.5, group:'围度'},
+  upperArm:     {label:'大臂',   unit:'cm', min:15,  max:60,  step:0.5, group:'围度'},
+  thighMid:     {label:'大腿中', unit:'cm', min:30,  max:90,  step:0.5, group:'围度'},
+  thighRoot:    {label:'大腿根', unit:'cm', min:35,  max:100, step:0.5, group:'围度'},
+  shoulder:     {label:'肩宽',   unit:'cm', min:30,  max:60,  step:0.5, group:'围度'},
+  shoulderCirc: {label:'肩围',   unit:'cm', min:80,  max:160, step:0.5, group:'围度'},
+  head:         {label:'头围',   unit:'cm', min:48,  max:70,  step:0.5, group:'围度'},
+};
+
+const measColors = {
+  neck:'#97C459',chest:'#5DCAA5',waist:'#7F77DD',hip:'#EF9F27',
+  upperArm:'#D85A30',thighMid:'#D4537E',thighRoot:'#c43060',
+  shoulder:'#888780',shoulderCirc:'#5F5E5A',head:'#85B7EB'
+};
+
+/* ═══════════════════════════════════════════════════════
+   ② 状态管理 — localStorage 优先
+   ═══════════════════════════════════════════════════════ */
+function loadData() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (raw) {
+      const saved = JSON.parse(raw);
+      return {
+        age: saved.age ?? DEFAULTS.age,
+        sex: saved.sex ?? DEFAULTS.sex,
+        height: saved.height ?? DEFAULTS.height,
+        weight: saved.weight ?? DEFAULTS.weight,
+        measures: { ...DEFAULTS.measures, ...(saved.measures || {}) },
+        _fromLocal: true,
+        _savedAt: saved._savedAt || null,
+      };
+    }
+  } catch(e){}
+  return { ...structuredClone(DEFAULTS), _fromLocal: false, _savedAt: null };
+}
+
+function saveData(d) {
+  const toSave = { age:d.age, sex:d.sex, height:d.height, weight:d.weight, measures:{...d.measures}, _savedAt: new Date().toISOString() };
+  localStorage.setItem(LS_KEY, JSON.stringify(toSave));
+}
+
+let D = loadData();
+
+/* ═══════════════════════════════════════════════════════
+   ③ 计算派生值
+   ═══════════════════════════════════════════════════════ */
+function derive(d) {
+  const M = d.measures;
+  const bmi     = +(d.weight / ((d.height/100)**2)).toFixed(1);
+  const whr     = +(M.waist / M.hip).toFixed(2);
+  const whi     = +(M.waist / d.height).toFixed(2);
+  return { bmi, whr, whi, whr_ok: whr<0.90, whi_ok: whi>=0.40&&whi<=0.50,
+           chestWaist: +(M.chest-M.waist).toFixed(0),
+           shoulderWaist: +(M.shoulderCirc-M.waist).toFixed(0) };
+}
+
+function bmiLabel(b){ if(b<18.5)return['偏瘦','tag-ok']; if(b<24)return['正常','tag-ok']; if(b<28)return['偏重','tag-warn']; return['肥胖','tag-danger']; }
+function bmiPct(b){ return Math.min(Math.max((b-14)/(36-14),0),1)*100; }
+
+function forecast(d, years, mode) {
+  const M = d.measures;
+  const wG   = {sedentary:[1.5,3.5,8],  maintain:[0.5,1,2],   active:[-2,-1,0]};
+  const waG  = {sedentary:[2,5,12],     maintain:[0.5,1.5,3], active:[-3,-2,0]};
+  const musC = {sedentary:[-1,-2,-4],   maintain:[0,0,0],     active:[2,4,6]};
+  const i = years===5?0:years===10?1:2;
+  const dW=wG[mode][i], dWa=waG[mode][i], dM=musC[mode][i];
+  return {
+    weight:   +(d.weight+dW).toFixed(1),
+    bmi:      +((d.weight+dW)/((d.height/100)**2)).toFixed(1),
+    waist:    +(M.waist+dWa).toFixed(0),
+    chest:    +(M.chest+dM*0.4).toFixed(0),
+    upperArm: +(M.upperArm+dM*0.2).toFixed(1),
+    thighMid: +(M.thighMid+dM*0.15+(mode==='sedentary'?dWa*0.2:0)).toFixed(1),
+    hip:      +(M.hip+(mode==='sedentary'?dWa*0.4:mode==='active'?-dM*0.1:0)).toFixed(0),
+  };
+}
+
+const scenarios = {
+  sedentary:{label:'不运动久坐',color:'#E24B4A'},
+  maintain: {label:'保持现状',  color:'#EF9F27'},
+  active:   {label:'积极健身',  color:'#1D9E75'},
+};
+
+/* ═══════════════════════════════════════════════════════
+   ④ 渲染
+   ═══════════════════════════════════════════════════════ */
+let chartInstances = {};
+let activeTab = 'sedentary';
+
+function render() {
+  const cv = derive(D);
+  const [blbl, bcls] = bmiLabel(cv.bmi);
+  const app = document.getElementById('app');
+  const now = new Date();
+
+  app.innerHTML = `
+<div class="header">
+  <div class="avatar">${D.age}</div>
+  <div class="header-info">
+    <h1>身体数据报告 ${D._fromLocal?'<span style="font-size:12px;color:var(--t1);font-weight:400"><span class="local-dot"></span>本地数据</span>':''}</h1>
+    <p>${D.sex}性 · ${D.age}岁 · ${D.height} cm · ${D.weight} kg · ${now.getFullYear()}年${now.getMonth()+1}月</p>
+  </div>
+</div>
+
+<div class="sec">基础指标</div>
+<div class="g3">
+  <div class="card"><div class="lbl">身高</div><div class="val">${D.height}<span class="unit">cm</span></div></div>
+  <div class="card"><div class="lbl">体重</div><div class="val">${D.weight}<span class="unit">kg</span></div></div>
+  <div class="card"><div class="lbl">BMI</div><div class="val">${cv.bmi}</div></div>
+</div>
+
+<div class="sec">BMI 体质指数</div>
+<div class="card-lg">
+  <div class="bmi-hd">
+    <span class="bmi-t">Body Mass Index</span>
+    <span><span class="val" style="font-size:24px">${cv.bmi}</span><span class="bmi-tag ${bcls}">${blbl}</span></span>
+  </div>
+  <div class="bmi-track"><div class="bmi-marker" id="bmi-marker" style="left:${bmiPct(cv.bmi).toFixed(1)}%"></div></div>
+  <div class="bmi-scale"><span>偏瘦 &lt;18.5</span><span>正常 18.5–24</span><span>偏重 24–28</span><span>肥胖 &gt;28</span></div>
+</div>
+
+<div class="sec">围度测量</div>
+<div class="body-sec">
+  <div style="flex-shrink:0">${svgSilhouette()}</div>
+  <div class="meas-list">${renderMeasBars()}</div>
+</div>
+
+<div class="sec">比例分析</div>
+<div class="g2">
+  <div class="card"><div class="lbl">腰臀比 WHR</div><div class="ratio-val">${cv.whr}</div><div class="ratio-sub">男性健康上限 &lt;0.90 ${cv.whr_ok?'<span class="ok">✓</span>':'⚠️'}</div></div>
+  <div class="card"><div class="lbl">腰高比</div><div class="ratio-val">${cv.whi}</div><div class="ratio-sub">理想范围 0.40–0.50 ${cv.whi_ok?'<span class="ok">✓</span>':'⚠️'}</div></div>
+  <div class="card"><div class="lbl">胸腰差</div><div class="ratio-val">+${cv.chestWaist} cm</div><div class="ratio-sub">胸围 ${D.measures.chest} — 腰围 ${D.measures.waist}</div></div>
+  <div class="card"><div class="lbl">肩腰差</div><div class="ratio-val">+${cv.shoulderWaist} cm</div><div class="ratio-sub">肩围 ${D.measures.shoulderCirc} — 腰围 ${D.measures.waist}</div></div>
+</div>
+
+<div class="sec">未来预测</div>
+<div class="card-lg" id="forecast-section"></div>
+
+<div class="footer">数据基于流行病学统计，仅供参考 · ${now.getFullYear()}年${now.getMonth()+1}月生成</div>`;
+
+  renderForecast();
+}
+
+function svgSilhouette() {
+  const mc = measColors;
+  return `<svg width="96" height="218" viewBox="0 0 96 218" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="人体轮廓">
+  <circle cx="48" cy="17" r="13" stroke="var(--bdm)" stroke-width="1.5" fill="none"/>
+  <ellipse cx="48" cy="32" rx="5.5" ry="3.5" stroke="var(--bdm)" stroke-width="1.5" fill="none"/>
+  <path d="M18 48 Q48 38 78 48 L80 108 Q78 118 72 120 L24 120 Q18 118 16 108 Z" stroke="var(--bdm)" stroke-width="1.5" fill="none"/>
+  <path d="M18 48 L6 93 Q4 103 8 108 L16 106" stroke="var(--bdm)" stroke-width="1.5" fill="none"/>
+  <path d="M78 48 L90 93 Q92 103 88 108 L80 106" stroke="var(--bdm)" stroke-width="1.5" fill="none"/>
+  <path d="M28 120 L24 172 Q23 182 28 187 L34 187 Q38 182 38 172 L40 133" stroke="var(--bdm)" stroke-width="1.5" fill="none"/>
+  <path d="M68 120 L72 172 Q73 182 68 187 L62 187 Q58 182 58 172 L56 133" stroke="var(--bdm)" stroke-width="1.5" fill="none"/>
+  <line x1="36" y1="32" x2="6" y2="32" stroke="${mc.neck}" stroke-width="1" stroke-dasharray="2,2"/><circle cx="6" cy="32" r="2.5" fill="${mc.neck}"/>
+  <line x1="16" y1="66" x2="2" y2="66" stroke="${mc.chest}" stroke-width="1" stroke-dasharray="2,2"/><circle cx="2" cy="66" r="2.5" fill="${mc.chest}"/>
+  <line x1="16" y1="84" x2="2" y2="84" stroke="${mc.waist}" stroke-width="1" stroke-dasharray="2,2"/><circle cx="2" cy="84" r="2.5" fill="${mc.waist}"/>
+  <line x1="16" y1="100" x2="2" y2="100" stroke="${mc.hip}" stroke-width="1" stroke-dasharray="2,2"/><circle cx="2" cy="100" r="2.5" fill="${mc.hip}"/>
+  <line x1="80" y1="68" x2="94" y2="68" stroke="${mc.upperArm}" stroke-width="1" stroke-dasharray="2,2"/><circle cx="94" cy="68" r="2.5" fill="${mc.upperArm}"/>
+  <line x1="26" y1="148" x2="2" y2="148" stroke="${mc.thighMid}" stroke-width="1" stroke-dasharray="2,2"/><circle cx="2" cy="148" r="2.5" fill="${mc.thighMid}"/>
+  <line x1="18" y1="48" x2="78" y2="48" stroke="${mc.shoulder}" stroke-width="1" stroke-dasharray="2,2" opacity="0.5"/>
+</svg>`;
+}
+
+function renderMeasBars() {
+  const maxBar = 125;
+  const names = {neck:'脖子',chest:'胸围',waist:'腰围',hip:'臀围',upperArm:'大臂',thighMid:'大腿中',thighRoot:'大腿根',shoulder:'肩宽',shoulderCirc:'肩围',head:'头围'};
+  return Object.entries(D.measures).map(([k,v])=>`
+<div class="mrow">
+  <div class="mdot" style="background:${measColors[k]}"></div>
+  <span class="mname">${names[k]}</span>
+  <div class="mbg"><div class="mbar" style="width:${Math.min(100,(v/maxBar)*100).toFixed(0)}%;background:${measColors[k]}"></div></div>
+  <span class="mval">${v} cm</span>
+</div>`).join('');
+}
+
+function renderForecast() {
+  const fs = document.getElementById('forecast-section');
+  if (!fs) return;
+
+  // destroy old charts
+  Object.values(chartInstances).forEach(c => { try{c.destroy()}catch(e){} });
+  chartInstances = {};
+
+  const tabBarHtml = `<div class="tab-bar" id="tab-bar">
+    ${Object.entries(scenarios).map(([k,s],i)=>`<button class="tab-btn${activeTab===k?' active':''}" data-key="${k}"
+      style="${activeTab===k?'background:var(--t0);color:var(--bg0);border-color:transparent':''}">${s.label}</button>`).join('')}
+  </div>`;
+
+  const panels = Object.entries(scenarios).map(([key, sc]) => {
+    const yrs = [5,10,20];
+    const preds = yrs.map(y => forecast(D, y, key));
+    const fields = [
+      {k:'weight',  label:'体重(kg)', now:D.weight},
+      {k:'waist',   label:'腰围(cm)', now:D.measures.waist},
+      {k:'chest',   label:'胸围(cm)', now:D.measures.chest},
+      {k:'upperArm',label:'大臂(cm)', now:D.measures.upperArm},
+      {k:'hip',     label:'臀围(cm)', now:D.measures.hip},
+      {k:'bmi',     label:'BMI',      now:derive(D).bmi},
+    ];
+    const grid = `<div style="display:grid;grid-template-columns:80px repeat(3,1fr);gap:6px;font-size:11px">
+      <div></div>${yrs.map(y=>`<div style="color:var(--t1);text-align:center">+${y}年<br><span style="font-size:10px">${D.age+y}岁</span></div>`).join('')}
+      ${fields.map(f=>`
+      <div style="color:var(--t1);display:flex;align-items:center">${f.label}</div>
+      ${preds.map(p=>{
+        const val = p[f.k] ?? f.now;
+        const diff = +(val-f.now).toFixed(1);
+        const color = diff===0?'var(--t1)':key==='active'?(diff<0?'#1D9E75':'var(--t1)'):diff>0?'#E24B4A':'#1D9E75';
+        return `<div style="background:var(--bg1);border-radius:6px;padding:5px 6px;text-align:center">
+          <div style="font-size:14px;font-weight:500">${val}</div>
+          <div style="font-size:10px;color:${color}">${diff===0?'–':diff>0?'+'+diff:diff}</div>
+        </div>`;
+      }).join('')}`).join('')}
+    </div>`;
+
+    const tlEvents = {
+      sedentary:[
+        {yr:1,c:'#EF9F27',t:'基础代谢自然下降，久坐减少消耗，腰围开始缓慢增加'},
+        {yr:3,c:'#EF9F27',t:'腰围约增加4cm，腰臀比逼近0.90警戒，内脏脂肪积累'},
+        {yr:5, c:'#E24B4A',t:`体重约 ${preds[0].weight}kg，BMI ${preds[0].bmi}，腰围约 ${preds[0].waist}cm，进入肥胖前期`},
+        {yr:10,c:'#E24B4A',t:`体重约 ${preds[1].weight}kg，腰围约 ${preds[1].waist}cm，代谢综合征风险显著上升`},
+        {yr:20,c:'#A32D2D',t:`体重约 ${preds[2].weight}kg，肌少症加速，关节压力持续增大`},
+      ],
+      maintain:[
+        {yr:1, c:'#97C459',t:'维持现有习惯，体重相对稳定，小幅波动正常'},
+        {yr:3, c:'#EF9F27',t:'代谢略降，如不调整饮食每年可能增重约0.3kg'},
+        {yr:5, c:'#EF9F27',t:`体重约 ${preds[0].weight}kg，腰围约 ${preds[0].waist}cm，整体变化不大`},
+        {yr:10,c:'#EF9F27',t:`体重约 ${preds[1].weight}kg，30岁后代谢加速下滑，建议增加运动量`},
+        {yr:20,c:'#EF9F27',t:`体重约 ${preds[2].weight}kg，可延缓体型变化，但仍需力量训练弥补肌肉流失`},
+      ],
+      active:[
+        {yr:1, c:'#1D9E75',t:'规律力量训练+有氧，体脂开始下降，腰围收紧，肌肉围度增加'},
+        {yr:3, c:'#1D9E75',t:`腰围约 ${preds[0].waist}cm，胸围大臂明显增大，体型比例改善`},
+        {yr:5, c:'#1D9E75',t:`体重约 ${preds[0].weight}kg（含肌肉增重），BMI ${preds[0].bmi}，体脂率预计降至18%以下`},
+        {yr:10,c:'#0F6E56',t:`体重约 ${preds[1].weight}kg，大臂约 ${preds[1].upperArm}cm，胸围约 ${preds[1].chest}cm`},
+        {yr:20,c:'#0F6E56',t:'持续锻炼可使40岁基础代谢接近当前水平，骨密度与心肺功能保持良好'},
+      ],
+    };
+    const tl = tlEvents[key].map((e,i,arr)=>`
+<div class="tl-item">
+  <div class="tl-dot-col">
+    <div class="tl-dot" style="background:${e.c}"></div>
+    ${i<arr.length-1?'<div class="tl-line"></div>':''}
+  </div>
+  <div>
+    <div class="tl-time">+${e.yr}年 · ${D.age+e.yr}岁</div>
+    <div class="tl-text">${e.t}</div>
+  </div>
+</div>`).join('');
+
+    return `<div class="scenario${activeTab===key?' active':''}" data-key="${key}">
+  <div style="margin-bottom:1rem">
+    <div style="font-size:12px;color:var(--t1);margin-bottom:.75rem">关键指标预测对比</div>
+    ${grid}
+  </div>
+  <div class="chart-wrap"><canvas id="chart-${key}" role="img" aria-label="${sc.label}体重趋势"></canvas></div>
+  <div style="margin-top:1rem">
+    <div style="font-size:12px;color:var(--t1);margin-bottom:.75rem">可能发生的变化</div>
+    <div class="timeline">${tl}</div>
+  </div>
+</div>`;
+  }).join('');
+
+  fs.innerHTML = tabBarHtml + panels;
+
+  // Tab events
+  fs.querySelector('#tab-bar').addEventListener('click', e => {
+    const btn = e.target.closest('.tab-btn');
+    if(!btn) return;
+    activeTab = btn.dataset.key;
+    fs.querySelectorAll('.tab-btn').forEach(b=>{
+      const on=b.dataset.key===activeTab;
+      b.classList.toggle('active',on);
+      b.style.background=on?'var(--t0)':'';
+      b.style.color=on?'var(--bg0)':'';
+      b.style.borderColor=on?'transparent':'';
+    });
+    fs.querySelectorAll('.scenario').forEach(s=>s.classList.toggle('active',s.dataset.key===activeTab));
+  });
+
+  // Build charts
+  setTimeout(() => {
+    Object.entries(scenarios).forEach(([key, sc]) => {
+      const ctx = document.getElementById(`chart-${key}`);
+      if (!ctx || !window.Chart) return;
+      const allYrs = [0,5,10,20];
+      const weights = allYrs.map(y=>y===0?D.weight:forecast(D,y,key).weight);
+      chartInstances[key] = new Chart(ctx, {
+        type:'line',
+        data:{
+          labels:allYrs.map(y=>y===0?'现在':`+${y}年`),
+          datasets:[{label:'体重 kg',data:weights,borderColor:sc.color,backgroundColor:sc.color+'22',fill:true,tension:.35,pointRadius:5,pointBackgroundColor:sc.color}]
+        },
+        options:{
+          responsive:true,maintainAspectRatio:false,
+          plugins:{legend:{display:false}},
+          scales:{
+            y:{min:Math.floor(Math.min(...weights)-3),max:Math.ceil(Math.max(...weights)+3),ticks:{font:{size:11}},grid:{color:'rgba(128,128,128,.1)'}},
+            x:{ticks:{font:{size:11}},grid:{display:false}}
+          }
+        }
+      });
+    });
+  }, 60);
+}
+
+/* ═══════════════════════════════════════════════════════
+   ⑤ 抽屉 & 表单
+   ═══════════════════════════════════════════════════════ */
+function buildDrawer() {
+  const body = document.getElementById('drawer-body');
+  const groups = {};
+  // basic fields
+  ['age','height','weight'].forEach(k=>{
+    const m=FIELD_META[k];
+    if(!groups[m.group]) groups[m.group]=[];
+    groups[m.group].push({k, val: k==='age'||k==='height'||k==='weight' ? D[k] : D.measures[k], m});
+  });
+  Object.keys(D.measures).forEach(k=>{
+    const m=FIELD_META[k];
+    if(!m) return;
+    if(!groups[m.group]) groups[m.group]=[];
+    groups[m.group].push({k, val:D.measures[k], m});
+  });
+
+  body.innerHTML = Object.entries(groups).map(([grp, fields])=>`
+<div>
+  <div class="field-group-title">${grp}</div>
+  ${fields.map(({k,val,m})=>`
+  <div class="field-row" style="margin-bottom:8px">
+    <label for="input-${k}">${m.label}</label>
+    <input type="number" id="input-${k}" data-key="${k}" value="${val}"
+      min="${m.min}" max="${m.max}" step="${m.step}" autocomplete="off">
+    <span class="unit-badge">${m.unit}</span>
+  </div>`).join('')}
+</div>`).join('');
+
+  // Input events — debounced save + re-render
+  let saveTimer;
+  body.addEventListener('input', e=>{
+    const inp = e.target.closest('input[data-key]');
+    if(!inp) return;
+    const k = inp.dataset.key;
+    const v = parseFloat(inp.value);
+    if(isNaN(v)) return;
+    if(['age','height','weight'].includes(k)) D[k]=v;
+    else D.measures[k]=v;
+    D._fromLocal = true;
+
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(()=>{
+      saveData(D);
+      showSaved();
+      render();
+    }, 600);
+  });
+}
+
+function showSaved() {
+  const badge = document.getElementById('saved-badge');
+  if(!badge) return;
+  badge.innerHTML = '<span class="local-dot"></span>已自动保存到本地';
+  badge.style.opacity='1';
+  clearTimeout(badge._t);
+  badge._t = setTimeout(()=>badge.style.opacity='0', 2500);
+}
+
+function openDrawer() {
+  document.getElementById('drawer').classList.add('open');
+  document.getElementById('overlay').classList.add('open');
+  document.body.classList.add('drawer-open');
+  buildDrawer();
+}
+function closeDrawer() {
+  document.getElementById('drawer').classList.remove('open');
+  document.getElementById('overlay').classList.remove('open');
+  document.body.classList.remove('drawer-open');
+}
+
+document.getElementById('fab-btn').addEventListener('click', openDrawer);
+document.getElementById('btn-close').addEventListener('click', closeDrawer);
+document.getElementById('overlay').addEventListener('click', closeDrawer);
+document.getElementById('btn-reset').addEventListener('click', ()=>{
+  if(!confirm('恢复默认数据？本地保存的数据将被清除。')) return;
+  localStorage.removeItem(LS_KEY);
+  D = { ...structuredClone(DEFAULTS), _fromLocal: false, _savedAt: null };
+  closeDrawer();
+  render();
+});
+
+/* ── init ── */
+render();
+</script>
+</body>
+</html>

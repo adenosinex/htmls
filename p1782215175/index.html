@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>92号汽油价格面板</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#f8f7f3;--surface:#fff;--border:#e8e6df;
+  --t1:#1a1816;--t2:#6b6860;--t3:#a09d96;
+  --dn:#059669;--dn-s:#ecfdf5;--dn-b:#a7f3d0;
+  --up:#dc2626;--up-s:#fef2f2;--up-b:#fecaca;
+  --ac:#0c4a6e;--ac-s:#f0f9ff;
+  --sh:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+  --r:16px;--rs:10px;
+}
+body{font-family:'Noto Sans SC',-apple-system,sans-serif;background:var(--bg);color:var(--t1);line-height:1.6;min-height:100vh;background-image:radial-gradient(ellipse at 15% 50%,rgba(5,150,105,.025) 0%,transparent 50%),radial-gradient(ellipse at 85% 20%,rgba(12,74,110,.025) 0%,transparent 50%)}
+.mono{font-family:'DM Mono',monospace}
+.app{max-width:1100px;margin:0 auto;padding:32px 24px}
+header{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;padding-bottom:18px;border-bottom:1px solid var(--border)}
+header h1{font-size:21px;font-weight:700;letter-spacing:-.4px}
+header h1 em{font-style:normal;color:var(--dn)}
+.status{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--t3)}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--dn);animation:pulse 2s ease-in-out infinite}
+.dot.err{background:var(--up)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+.card{background:var(--surface);border-radius:var(--r);padding:22px 24px;box-shadow:var(--sh);border:1px solid var(--border);animation:fadeUp .45s ease both}
+.mr .card:nth-child(2){animation-delay:.06s}
+.mr .card:nth-child(3){animation-delay:.12s}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.lbl{font-size:11.5px;font-weight:500;color:var(--t3);letter-spacing:.4px;margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+
+.mr{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:14px}
+.cd-disp{display:flex;align-items:baseline;flex-wrap:wrap}
+.cd-v{font-family:'DM Mono',monospace;font-size:clamp(28px,4vw,36px);font-weight:500;line-height:1.1}
+.cd-u{font-size:12px;color:var(--t3);margin:0 6px 0 1px}
+.cd-s{font-family:'DM Mono',monospace;font-size:clamp(18px,2.5vw,22px);color:var(--t3)}
+.pv{font-family:'DM Mono',monospace;font-size:clamp(32px,4.5vw,42px);font-weight:500;line-height:1.1}
+.pu{font-size:13px;color:var(--t2);margin-left:3px}
+.pc{font-size:12.5px;margin-top:5px}
+.pbar-bg{background:#eeedea;border-radius:6px;height:7px;margin:10px 0 7px;overflow:hidden}
+.pbar-f{height:100%;border-radius:6px;background:linear-gradient(90deg,var(--ac),var(--dn));transition:width .6s ease}
+.ptxt{font-size:12.5px;color:var(--t2)}
+
+.dr{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+
+.comp-bar-wrap{position:relative;height:28px;border-radius:8px;overflow:hidden;display:flex;margin:14px 0 16px;box-shadow:inset 0 1px 2px rgba(0,0,0,.08)}
+.comp-seg{height:100%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:#fff;transition:width .6s ease;position:relative;overflow:hidden;white-space:nowrap}
+.comp-seg span{position:relative;z-index:1;text-shadow:0 1px 2px rgba(0,0,0,.2)}
+.comp-list{display:flex;flex-direction:column;gap:7px;margin-top:6px}
+.comp-row{display:flex;align-items:center;gap:8px;font-size:12.5px}
+.comp-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+.comp-name{color:var(--t2);flex:1}
+.comp-val{font-family:'DM Mono',monospace;font-weight:500;color:var(--t1);min-width:62px;text-align:right}
+.comp-pct{font-family:'DM Mono',monospace;color:var(--t3);font-size:11px;min-width:38px;text-align:right}
+.comp-total{display:flex;justify-content:space-between;align-items:center;padding-top:10px;margin-top:6px;border-top:1px dashed var(--border);font-size:13px;font-weight:600}
+
+.ci{display:flex;justify-content:space-between;align-items:center;padding:7px 0;font-size:13.5px}
+.cl{color:var(--t2)}.cv{font-family:'DM Mono',monospace;font-weight:500;color:var(--t1)}
+
+.hli{display:flex;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);font-size:13.5px;gap:10px}
+.hli:last-child{border-bottom:none}
+.hld{width:62px;color:var(--t2);flex-shrink:0}
+.hlb{display:inline-flex;align-items:center;gap:3px;padding:2px 10px;border-radius:20px;font-size:12.5px;font-weight:500;min-width:68px;justify-content:center}
+.hlb.dn{background:var(--dn-s);color:var(--dn)}.hlb.up{background:var(--up-s);color:var(--up)}.hlb.neu{background:#f5f5f2;color:var(--t3)}
+.hlt{font-family:'DM Mono',monospace;color:var(--t2);font-size:12.5px}
+.ysum{font-size:13px;color:var(--t2);margin-bottom:12px;padding:10px 14px;background:#f9f9f6;border-radius:var(--rs)}
+
+.src{display:inline-flex;align-items:center;gap:3px;font-size:10.5px;padding:1px 8px;border-radius:4px;font-weight:500}
+.src.live{color:var(--dn);background:var(--dn-s)}
+.src.live::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--dn)}
+.src.cached{color:var(--t3);background:#efeeea}
+.src.cached::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--t3);opacity:.5}
+.src.err{color:var(--up);background:var(--up-s)}
+.src.err::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--up);opacity:.6}
+
+footer{margin-top:28px;padding-top:18px;border-top:1px solid var(--border);text-align:center;font-size:11.5px;color:var(--t3);line-height:1.9}
+@media(max-width:768px){
+  .app{padding:18px 14px}
+  header{flex-direction:column;gap:8px;text-align:center}
+  .mr,.dr{grid-template-columns:1fr}
+  .cd-disp{justify-content:center}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>⛽ 92号汽油 <em>价格面板</em></h1>
+    <div class="status"><span class="dot" id="sDot"></span><span id="sTxt">加载中...</span></div>
+  </header>
+
+  <main>
+    <div class="mr">
+      <div class="card">
+        <div class="lbl">距下次调价</div>
+        <div class="cd-disp">
+          <span class="cd-v mono" id="dD">--</span><span class="cd-u">天</span>
+          <span class="cd-s">:</span><span class="cd-v mono" id="dH">--</span><span class="cd-u">时</span>
+          <span class="cd-s">:</span><span class="cd-v mono" id="dM">--</span><span class="cd-u">分</span>
+          <span class="cd-s">:</span><span class="cd-v mono" id="dS">--</span><span class="cd-u">秒</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="lbl">当前 92号 均价 <span class="src" id="dSrc">加载中</span></div>
+        <div><span class="pv mono" id="curP">--</span><span class="pu">元/升</span></div>
+        <div class="pc" id="curInfo">--</div>
+      </div>
+      <div class="card">
+        <div class="lbl">调价周期进度</div>
+        <div class="ptxt">第 <strong id="nDay">-</strong> / 10 工作日</div>
+        <div class="pbar-bg"><div class="pbar-f" id="pFill" style="width:0"></div></div>
+        <div class="ptxt" id="pInfo">--</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:14px">
+      <div class="lbl">92号汽油价格构成（每升）</div>
+      <div class="comp-bar-wrap" id="compBar"></div>
+      <div class="comp-list" id="compList"></div>
+    </div>
+
+    <div class="dr">
+      <div class="card">
+        <div class="lbl">调价规则</div>
+        <div class="ci"><span class="cl">调价门槛</span><span class="cv">±50 元/吨</span></div>
+        <div class="ci"><span class="cl">调控区间</span><span class="cv">$40 ~ $130 /桶</span></div>
+        <div class="ci"><span class="cl">调价周期</span><span class="cv">10 个工作日</span></div>
+        <div class="ci"><span class="cl">密度换算</span><span class="cv">~1351 升/吨 (92号)</span></div>
+        <div class="ci"><span class="cl">参考标的</span><span class="cv" style="font-size:12px">布伦特:迪拜:米纳斯 = 4:3:3</span></div>
+      </div>
+      <div class="card">
+        <div class="lbl">价格构成参考</div>
+        <div class="ci"><span class="cl">消费税</span><span class="cv">1.52 元/升 (固定)</span></div>
+        <div class="ci"><span class="cl">增值税率</span><span class="cv">13% (价内税)</span></div>
+        <div class="ci"><span class="cl">城建+教育附加</span><span class="cv">消费税+增值税的 12%</span></div>
+        <div class="ci"><span class="cl">原油成本占比</span><span class="cv">约 43%</span></div>
+        <div class="ci"><span class="cl">税费合计占比</span><span class="cv">约 35%</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="lbl">2026年调价历史</div>
+      <div class="ysum">2026年: <strong>8涨 3跌 1搁浅</strong> · 汽油累计 <strong>+1540 元/吨</strong> · 92号约 +1.24 元/升</div>
+      <ul id="hList"></ul>
+    </div>
+  </main>
+
+  <footer>
+    ⚠ 数据基于公开信息，仅供参考 · 实际以国家发改委公告为准<br>
+    国内油价: /api2/oil/domestic/latest · 机构参考: 卓创 / 金联创 / 隆众
+  </footer>
+</div>
+
+<script>
+var CFG = {
+  ADJ: [
+    '2026-01-07T00:00:00+08:00',
+    '2026-01-21T00:00:00+08:00',
+    '2026-02-04T00:00:00+08:00',
+    '2026-02-25T00:00:00+08:00',
+    '2026-03-10T00:00:00+08:00',
+    '2026-03-24T00:00:00+08:00',
+    '2026-04-08T00:00:00+08:00',
+    '2026-04-22T00:00:00+08:00',
+    '2026-05-09T00:00:00+08:00',
+    '2026-05-22T00:00:00+08:00',
+    '2026-06-05T00:00:00+08:00',
+    '2026-06-19T00:00:00+08:00',
+    '2026-07-04T00:00:00+08:00',
+    '2026-07-18T00:00:00+08:00',
+    '2026-08-01T00:00:00+08:00',
+    '2026-08-15T00:00:00+08:00',
+    '2026-08-29T00:00:00+08:00',
+    '2026-09-12T00:00:00+08:00',
+    '2026-09-25T00:00:00+08:00',
+    '2026-10-16T00:00:00+08:00',
+    '2026-10-30T00:00:00+08:00',
+    '2026-11-13T00:00:00+08:00',
+    '2026-11-27T00:00:00+08:00',
+    '2026-12-11T00:00:00+08:00',
+    '2026-12-25T00:00:00+08:00'
+  ],
+  DAYS: 10,
+  BRENT_DEFAULT: 77.30,
+  CNY_DEFAULT: 7.18,
+  P92_DEFAULT: 7.94,
+  CACHE_KEY: 'oil_domestic_v1',
+  HIS: [
+    {d:'6\u670818\u65e5',r:'dn',t:-515,l:-0.40},
+    {d:'6\u67084\u65e5',r:'dn',t:-525,l:-0.42},
+    {d:'5\u670821\u65e5',r:'up',t:75,l:0.06},
+    {d:'5\u67088\u65e5',r:'up',t:320,l:0.25},
+    {d:'4\u670821\u65e5',r:'dn',t:-555,l:-0.43},
+    {d:'4\u67087\u65e5',r:'up',t:420,l:0.32},
+    {d:'3\u670823\u65e5',r:'up',t:1160,l:0.87},
+    {d:'3\u67089\u65e5',r:'up',t:695,l:0.52},
+    {d:'2\u670824\u65e5',r:'up',t:175,l:0.13},
+    {d:'2\u67083\u65e5',r:'up',t:205,l:0.15},
+    {d:'1\u670820\u65e5',r:'up',t:85,l:0.06},
+    {d:'1\u67086\u65e5',r:'neu',t:0,l:0}
+  ]
+};
+
+var D = {
+  p92: CFG.P92_DEFAULT, p95: 0, p98: 0,
+  city: '', date: '', isCached: false
+};
+
+/* ── 工具 ── */
+
+function getCycleStart() {
+  var n = Date.now();
+  for (var i = CFG.ADJ.length - 1; i >= 0; i--) {
+    if (new Date(CFG.ADJ[i]).getTime() <= n) return new Date(CFG.ADJ[i]);
+  }
+  return new Date(CFG.ADJ[0]);
+}
+
+function nxt() {
+  var n = Date.now();
+  for (var i = 0; i < CFG.ADJ.length; i++) {
+    if (new Date(CFG.ADJ[i]).getTime() > n) return new Date(CFG.ADJ[i]);
+  }
+  return new Date(CFG.ADJ[0]);
+}
+
+function wd() {
+  var s = getCycleStart(), n = new Date(), c = 0, d = new Date(s);
+  while (d <= n && c < CFG.DAYS) {
+    var g = d.getDay();
+    if (g >= 1 && g <= 5) c++;
+    d.setDate(d.getDate() + 1);
+  }
+  return Math.min(c, CFG.DAYS);
+}
+
+function pad(n) { return String(n).padStart(2, '0'); }
+
+function toCNYL(usd) {
+  return (usd / 159) * CFG.CNY_DEFAULT;
+}
+
+function adjLabelDate(effMs) {
+  var d = new Date(effMs);
+  d.setDate(d.getDate() - 1);
+  return (d.getMonth() + 1) + '\u6708' + d.getDate() + '\u65e5';
+}
+
+/* ── 国内油价 (带缓存) ── */
+
+function readCache() {
+  try {
+    var raw = localStorage.getItem(CFG.CACHE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch (e) { return null; }
+}
+
+function writeCache(data) {
+  try {
+    var nextAdj = nxt();
+    localStorage.setItem(CFG.CACHE_KEY, JSON.stringify({
+      data: data,
+      nextAdj: nextAdj.toISOString(),
+      saved: new Date().toISOString()
+    }));
+  } catch (e) {}
+}
+
+async function fetchDomestic() {
+  var cache = readCache();
+  if (cache && cache.data && cache.nextAdj) {
+    var adjTime = new Date(cache.nextAdj).getTime();
+    if (Date.now() < adjTime) {
+      applyDomestic(cache.data, true);
+      return;
+    }
+  }
+  try {
+    var r = await fetch('/api2/oil/domestic/latest');
+    var j = await r.json();
+    if (j.code === 0 && j.data) {
+      applyDomestic(j.data, false);
+      writeCache(j.data);
+    } else {
+      applyDomesticFallback();
+    }
+  } catch (e) {
+    console.warn('\u56fd\u5185\u6cb9\u4ef7API\u5f02\u5e38', e);
+    if (cache && cache.data) {
+      applyDomestic(cache.data, true);
+    } else {
+      applyDomesticFallback();
+    }
+  }
+}
+
+function applyDomestic(data, cached) {
+  D.p92 = data.gasoline_92 || CFG.P92_DEFAULT;
+  D.p95 = data.gasoline_95 || 0;
+  D.p98 = data.gasoline_98 || 0;
+  D.city = data.city || '';
+  D.date = data.date || '';
+  D.isCached = cached;
+}
+
+function applyDomesticFallback() {
+  D.p92 = CFG.P92_DEFAULT;
+  D.isCached = false;
+  D.city = '';
+  D.date = '';
+}
+
+/* ── 倒计时 ── */
+
+function tick() {
+  var t = nxt() - new Date();
+  if (t <= 0) {
+    document.getElementById('dD').textContent = '00';
+    document.getElementById('dH').textContent = '00';
+    document.getElementById('dM').textContent = '00';
+    document.getElementById('dS').textContent = '00';
+    return;
+  }
+  document.getElementById('dD').textContent = pad(Math.floor(t / 864e5));
+  document.getElementById('dH').textContent = pad(Math.floor(t % 864e5 / 36e5));
+  document.getElementById('dM').textContent = pad(Math.floor(t % 36e5 / 6e4));
+  document.getElementById('dS').textContent = pad(Math.floor(t % 6e4 / 1e3));
+}
+
+/* ── 油价构成 ── */
+
+function renderComposition() {
+  var price = D.p92;
+  var crudeCNY = toCNYL(CFG.BRENT_DEFAULT);
+  var crudeCost = Math.min(crudeCNY * 1.08, price * 0.46);
+  var items = [
+    { name:'\u539f\u6cb9\u6210\u672c',     val:crudeCost,       color:'#d97706', note:'\u56fd\u9645\u6cb9\u4ef7\u6362\u7b97+\u70bc\u5316\u7cfb\u6570' },
+    { name:'\u6d88\u8d39\u7a0e',           val:1.52,            color:'#dc2626', note:'\u56fa\u5b9a\u7a0e\u989d 1.52\u5143/\u5347' },
+    { name:'\u589e\u503c\u7a0e',           val:0.91,            color:'#ea580c', note:'\u7a0e\u738713%\uff0c\u4ef7\u5185\u7a0e' },
+    { name:'\u57ce\u5efa+\u6559\u80b2\u9644\u52a0', val:0.22,   color:'#7c3aed', note:'\u6d88\u8d39\u7a0e+\u589e\u503c\u7a0e\u768412%' },
+    { name:'\u70bc\u5316\u6210\u672c',     val:price * 0.08,    color:'#0284c7', note:'\u539f\u6cb9\u2192\u6210\u54c1\u6cb9\u52a0\u5de5\u8d39\u7528' },
+    { name:'\u6d41\u901a\u8d39\u7528',     val:price * 0.045,   color:'#059669', note:'\u8fd0\u8f93\u3001\u4ed3\u50a8\u3001\u6279\u53d1\u73af\u8282' },
+    { name:'\u52a0\u6cb9\u7ad9\u5229\u6da6', val:0,             color:'#6b7280', note:'\u7ec8\u7aef\u96f6\u552e\u6bdb\u5229' }
+  ];
+  var sum6 = 0;
+  for (var i = 0; i < items.length - 1; i++) sum6 += items[i].val;
+  items[items.length - 1].val = Math.max(0, price - sum6);
+
+  var bar = document.getElementById('compBar');
+  var list = document.getElementById('compList');
+  bar.innerHTML = '';
+  list.innerHTML = '';
+
+  for (var j = 0; j < items.length; j++) {
+    var it = items[j];
+    var pct = (it.val / price * 100);
+    var seg = document.createElement('div');
+    seg.className = 'comp-seg';
+    seg.style.width = pct + '%';
+    seg.style.background = it.color;
+    if (pct > 10) seg.innerHTML = '<span>' + pct.toFixed(0) + '%</span>';
+    seg.title = it.name + ': ' + it.val.toFixed(2) + ' \u5143/\u5347 (' + pct.toFixed(1) + '%)';
+    bar.appendChild(seg);
+
+    var row = document.createElement('div');
+    row.className = 'comp-row';
+    row.innerHTML =
+      '<span class="comp-dot" style="background:' + it.color + '"></span>' +
+      '<span class="comp-name">' + it.name +
+        '<span style="color:var(--t3);font-size:10.5px;margin-left:5px">' + it.note + '</span></span>' +
+      '<span class="comp-val">' + it.val.toFixed(2) + '</span>' +
+      '<span class="comp-pct">' + pct.toFixed(1) + '%</span>';
+    list.appendChild(row);
+  }
+
+  var total = document.createElement('div');
+  total.className = 'comp-total';
+  total.innerHTML = '<span>\u5408\u8ba1</span><span class="mono">' + price.toFixed(2) + ' \u5143/\u5347</span>';
+  list.appendChild(total);
+}
+
+/* ── 主渲染 ── */
+
+function render() {
+  var now = new Date();
+  var timeStr = now.toLocaleTimeString('zh-CN', {hour:'2-digit', minute:'2-digit'});
+
+  /* 状态栏 */
+  var sDot = document.getElementById('sDot');
+  var sTxt = document.getElementById('sTxt');
+  if (D.isCached) {
+    sDot.className = 'dot';
+    sTxt.textContent = '\u7f13\u5b58\u6570\u636e \u00b7 ' + (D.date || timeStr);
+  } else if (D.city) {
+    sDot.className = 'dot';
+    sTxt.textContent = '\u5728\u7ebf\u6570\u636e \u00b7 ' + (D.date || timeStr);
+  } else {
+    sDot.className = 'dot err';
+    sTxt.textContent = '\u4f7f\u7528\u9ed8\u8ba4\u503c';
+  }
+
+  /* 92号价格 */
+  document.getElementById('curP').textContent = D.p92.toFixed(2);
+  var dSrc = document.getElementById('dSrc');
+  if (D.isCached) {
+    dSrc.className = 'src cached';
+    dSrc.textContent = (D.city ? D.city + ' ' : '') + '\u672c\u5730 ' + (D.date ? D.date.slice(5) : '');
+  } else if (D.city) {
+    dSrc.className = 'src live';
+    dSrc.textContent = D.city + ' \u5728\u7ebf';
+  } else {
+    dSrc.className = 'src err';
+    dSrc.textContent = '\u9ed8\u8ba4\u503c';
+  }
+
+  var curInfo = document.getElementById('curInfo');
+  var infoParts = [];
+  if (D.p95 > 0) infoParts.push('95#: ' + D.p95.toFixed(2));
+  if (D.p98 > 0) infoParts.push('98#: ' + D.p98.toFixed(2));
+  if (D.date) infoParts.push('\u66f4\u65b0: ' + D.date);
+  curInfo.textContent = infoParts.length > 0 ? infoParts.join(' \u00b7 ') : '--';
+
+  /* 进度 */
+  var days = wd();
+  document.getElementById('nDay').textContent = days;
+  var pct = Math.round(days / CFG.DAYS * 100);
+  document.getElementById('pFill').style.width = pct + '%';
+  var nd = nxt();
+  document.getElementById('pInfo').textContent = pct + '% \u00b7 ' + adjLabelDate(nd) + '24:00';
+
+  /* 构成 */
+  renderComposition();
+
+  /* 历史 */
+  document.getElementById('hList').innerHTML = CFG.HIS.map(function(h) {
+    var ar = h.r === 'dn' ? '\u2193' : h.r === 'up' ? '\u2191' : '\u2014';
+    var lb = h.r === 'dn' ? '\u4e0b\u8c03' : h.r === 'up' ? '\u4e0a\u8c03' : '\u6401\u6d45';
+    var ts = h.r === 'neu' ? '0' : (h.t > 0 ? '+' : '') + h.t;
+    var ls = h.r === 'neu' ? '0' : (h.l > 0 ? '+' : '') + h.l.toFixed(2);
+    var cls = h.r === 'dn' ? 'dn' : h.r === 'up' ? 'up' : 'neu';
+    return '<li class="hli"><span class="hld">' + h.d + '</span><span class="hlb ' + cls + '">' + ar + ' ' + lb + '</span><span class="hlt">' + ts + ' \u5143/\u5428 (' + ls + ' \u5143/\u5347)</span></li>';
+  }).join('');
+}
+
+/* ── 初始化 ── */
+
+async function init() {
+  tick();
+  setInterval(tick, 1000);
+  render();
+  await fetchDomestic();
+  render();
+}
+
+init();
+</script>
+</body>
+</html>
