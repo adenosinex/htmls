@@ -7,7 +7,7 @@
 平台的代码与资料按性质分五个仓库（账号 adenosinex），放东西前先对号入座：
 
 - **apphub**（私有）— 平台本体：面板代码与经验文档。https://github.com/adenosinex/apphub
-- **pys**（私有）— Python 应用代码，一项目一个文件夹。https://github.com/adenosinex/pys
+- **pys**（公开）— Python 应用代码，一项目一个文件夹。https://github.com/adenosinex/pys
 - **htmls**（本仓，公开）— HTML 应用代码。
 - **data**（私有）— 项目数据：白名单内有价值、后续可用的数据，单向镜像发布。https://github.com/adenosinex/data
 - **materials**（公开）— 项目素材（语料），按项目分文件夹存放。https://github.com/adenosinex/materials
