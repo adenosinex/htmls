@@ -283,7 +283,7 @@ async function fetchDomestic() {
     }
   }
   try {
-    var r = await fetch('/api2/oil/domestic/latest');
+    var r = await fetch('/web/oil/api2/oil/domestic/latest');
     var j = await r.json();
     if (j.code === 0 && j.data) {
       applyDomestic(j.data, false);
