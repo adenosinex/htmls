@@ -153,7 +153,7 @@ footer{margin-top:28px;padding-top:18px;border-top:1px solid var(--border);text-
 
   <footer>
     ⚠ 数据基于公开信息，仅供参考 · 实际以国家发改委公告为准<br>
-    国内油价: /api2/oil/domestic/latest · 机构参考: 卓创 / 金联创 / 隆众
+    国内油价: PocketBase 油价库 · 机构参考: 卓创 / 金联创 / 隆众
   </footer>
 </div>
 
@@ -283,11 +283,19 @@ async function fetchDomestic() {
     }
   }
   try {
-    var r = await fetch('/web/oil/api2/oil/domestic/latest');
+    var r = await fetch('/web/lightapi/oil/records/oil_prices?sort=-effective&perPage=1');
     var j = await r.json();
-    if (j.code === 0 && j.data) {
-      applyDomestic(j.data, false);
-      writeCache(j.data);
+    var rec = (j.items && j.items[0]) || null;
+    if (rec) {
+      var data = {
+        gasoline_92: rec.p92,
+        gasoline_95: rec.p95,
+        gasoline_98: rec.p98,
+        city: rec.province,
+        date: (rec.effective || '').slice(0, 10)
+      };
+      applyDomestic(data, false);
+      writeCache(data);
     } else {
       applyDomesticFallback();
     }

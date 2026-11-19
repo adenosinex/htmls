@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<script>window.API_BASE = '/web/lightapi/fuel';</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>油耗统计</title>
+    <script src="static/cdn/vue3.5.global.prod.js"></script>
+    <script src="static/cdn/axios1.1.min.js"></script>
+    <script src="static/cdn/tailwindcss3.4.17.js"></script>
+    <script src="static/cdn/chart.min.3.9.1.js"></script>
+    <script src="static/cdn/chartjs-plugin-datalabels@2.js"></script>
+
+
+</head>
+<body class="bg-gray-50 min-h-screen">
+<style>
+  /* hub-topnav: unified page header (UI batch4, option C) - same skeleton as the gen-4 sticky topnav */
+  .hub-topnav{position:sticky;top:0;z-index:40;background:#fff;border-bottom:1px solid #e5e7eb;box-shadow:0 1px 2px rgba(16,24,40,.05);padding:14px 16px;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif}
+  .hub-topnav-in{max-width:68rem;margin:0 auto;display:flex;align-items:center;gap:12px}
+  .hub-topnav h1,.hub-topnav .hub-title{font-size:20px;font-weight:700;color:#1f2937;letter-spacing:-.01em;margin:0;flex:0 0 auto;line-height:1.25}
+  .hub-topnav .hub-actions{margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+  @media (max-width:767px){.hub-topnav{padding:12px}.hub-topnav h1,.hub-topnav .hub-title{font-size:18px}}
+</style>
+<header class="hub-topnav"><div class="hub-topnav-in"><h1>油耗统计</h1></div></header>
+<div id="app" class="max-w-[68rem] mx-auto mt-8 p-6 bg-white rounded-lg shadow">
+    <div v-if="authError" class="mb-4 p-3 rounded-lg border border-red-300 bg-red-50 text-red-700 text-sm">未登录，无法读取云端数据，<a id="authLoginLink" href="/login" class="underline font-semibold">去登录</a></div>
+    <div class="flex gap-2 mb-4">
+  <button @click="view = 'fuel'" class="px-4 py-1.5 rounded font-semibold text-sm" :class="view === 'fuel' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600'">油耗统计</button>
+  <button @click="view = 'maint'" class="px-4 py-1.5 rounded font-semibold text-sm" :class="view === 'maint' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600'">保养周期</button>
+</div>
+<div v-show="view === 'fuel'">
+    <div class="flex justify-between items-center mb-4">
+
+       
+    </div>
+    
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
+       
+
+        <div class="text-center">
+            <div class="text-2xl font-bold text-blue-600">${lastEfficiency} km</div>
+            <div class="text-sm text-gray-600">最近油耗</div>
+        </div>
+        <div class="text-center">
+            <div class="text-2xl font-bold text-blue-600">${totalMileage} km</div>
+            <div class="text-sm text-gray-600">总里程</div>
+        </div>
+        <div class="text-center">
+            <div class="text-2xl font-bold text-green-600">${totalFuel} L</div>
+            <div class="text-sm text-gray-600">总加油量</div>
+        </div>
+        <div class="text-center">
+            <div class="text-2xl font-bold text-purple-600">${avgEfficiency}</div>
+            <div class="text-sm text-gray-600">平均油耗(L/100km)</div>
+        </div>
+        <div class="text-center">
+            <div class="text-2xl font-bold text-orange-600">${recentTrend}</div>
+            <div class="text-sm text-gray-600">最近趋势</div>
+        </div>
+    </div>
+    
+    <form @submit.prevent="addRecord" class="flex flex-col gap-3 mb-6 bg-blue-50 p-4 rounded-lg">
+        <div class="flex flex-wrap gap-3 items-center">
+            <span class="text-sm font-semibold text-blue-700">总里程(km)</span>
+            <input type="number" v-model.number="totalMileageInput" step="0.1" min="0" class="w-24 px-2 py-1 border rounded" required>
+            <span class="text-sm font-semibold text-green-700">加油量(L)</span>
+            <input type="number" v-model.number="fuelAmount" step="0.1" min="0" class="w-24 px-2 py-1 border rounded" required>
+            <input v-model="remark" class="flex-1 px-2 py-1 border rounded min-w-[200px]" placeholder="备注（可选）">
+            <button type="submit" class="px-6 py-1 bg-blue-500 text-white font-bold rounded hover:bg-blue-600 transition">记录</button>
+        </div>
+    </form>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div>
+            <h3 class="text-lg font-semibold mb-2 text-center text-gray-700">油耗趋势图</h3>
+            <canvas id="fuelChart" style="height: 40vh; max-height: 350px;"></canvas>
+        </div>
+        <div>
+            <h3 class="text-lg font-semibold mb-2 text-center text-gray-700">里程 vs 油耗散点图</h3>
+            <canvas id="distanceChart" style="height: 40vh; max-height: 350px;"></canvas>
+        </div>
+    </div>
+
+    <div class="mb-4">
+        <h3 class="text-lg font-semibold mb-2 text-gray-700">历史记录</h3>
+        <div class="overflow-x-auto">
+            <table class="min-w-full table-auto text-sm text-center">
+                <thead>
+                    <tr class="bg-gray-200 text-gray-700">
+                        <th class="px-4 py-2">日期时间</th>
+                        <th class="px-4 py-2">总里程(km)</th>
+                        <th class="px-4 py-2">加油量(L)</th>
+                        <th class="px-4 py-2">单次里程(km)</th>
+                        <th class="px-4 py-2">间隔天数</th>
+                        <th class="px-4 py-2">日均里程(km)</th>
+                        <th class="px-4 py-2 text-red-600">油耗(L/100km)</th>
+                        <th class="px-4 py-2">备注</th>
+                        <th class="px-4 py-2">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="item in reversedStats" :key="item.id" class="border-b hover:bg-gray-50">
+                        <td class="px-4 py-2">${item.date} <span class="text-gray-400 text-xs">${item.time}</span></td>
+                        <td class="px-4 py-2 font-mono">${item.total_mileage}</td>
+                        <td class="px-4 py-2 font-mono">${item.fuel_amount}</td>
+                        <td class="px-4 py-2 font-mono text-gray-600">${item.mileage_diff}</td>
+                        <td class="px-4 py-2 font-mono text-gray-600">${item.days_diff}</td>
+                        <td class="px-4 py-2 font-mono text-gray-600">${item.daily_distance}</td>
+                        <td class="px-4 py-2 font-bold" :class="item.fuel_efficiency === '--' ? 'text-gray-400' : 'text-red-500'">
+                            ${item.fuel_efficiency}
+                        </td>
+                        <td class="px-4 py-2 text-gray-500 text-left max-w-[200px] truncate" :title="item.remark">${item.remark}</td>
+                        <td class="px-4 py-2">
+                            <button v-if="isDeletable(item._time)" @click="deleteRecord(item.id)" class="px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 text-xs transition">删除</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+     <div class="flex gap-2">
+            <button @click="exportCSV" class="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-sm transition">导出 CSV</button>
+            <input type="file" ref="fileInput" @change="importCSV" class="hidden" accept=".csv">
+            <button @click="$refs.fileInput.click()" class="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 text-sm transition">导入 CSV</button>
+        </div>
+</div>
+<div v-show="view === 'maint'">
+    <div class="mb-4 p-4 bg-gray-50 rounded-lg text-sm text-gray-700">
+        豪爵 UHR150（HJ150T-28）· 当前里程 <b>${totalMileage} km</b>（截至 ${latestFuelDate}）
+    </div>
+    <div v-for="card in maintCards" :key="card.key" class="mb-3 p-3 border rounded-lg">
+        <div class="flex items-center gap-2">
+            <span class="font-semibold text-gray-800">${card.name}</span>
+            <span class="px-2 py-0.5 rounded text-xs" :style="card.badgeStyle">${card.statusLabel}</span>
+            <span v-if="card.mainNumber" class="text-sm font-semibold text-gray-800">${card.mainNumber}</span>
+            <span class="ml-auto px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-700">${card.impactLabel} · ${card.sev}</span>
+        </div>
+        <div v-if="card.pct !== null" class="h-2 bg-gray-200 rounded my-2">
+            <div class="h-2 rounded" :style="{width: Math.min(card.pct, 1) * 100 + '%', background: card.barColor}"></div>
+        </div>
+        <div class="flex items-center gap-2 mt-1">
+            <span class="text-xs text-gray-500">${card.cycleLabel}</span>
+            <button @click="toggleCard(card.key)" class="ml-auto text-sm text-blue-600">${expanded[card.key] ? '收起' : '详情'}</button>
+        </div>
+        <div v-if="expanded[card.key]" class="mt-2 text-sm text-gray-600 space-y-1">
+            <div class="text-xs text-gray-400">${card.spec}</div>
+            <div v-if="card.detailProgress">${card.detailProgress}</div>
+            <div>${card.lastLabel}</div>
+            <div v-if="card.assumeLabel" class="text-amber-700">${card.assumeLabel}</div>
+            <div class="text-gray-700">${card.consequence}</div>
+            <div>${card.cost}</div>
+        </div>
+    </div>
+    <div class="mt-6 p-4 bg-blue-50 rounded-lg">
+        <h3 class="font-semibold text-gray-700 mb-3">登记保养</h3>
+        <div class="flex flex-wrap gap-3 items-center">
+            <select v-model="regItem" class="px-2 py-1 border rounded text-sm">
+                <option v-for="it in maintItems" :key="it.key" :value="it.key">${it.name}</option>
+            </select>
+            <span class="text-sm font-semibold text-blue-700">里程(km)</span>
+            <input type="number" v-model.number="regMileage" step="1" min="0" class="w-24 px-2 py-1 border rounded" required>
+            <span class="text-sm font-semibold text-blue-700">日期</span>
+            <input type="date" v-model="regDate" class="px-2 py-1 border rounded text-sm">
+            <input v-model="regNote" class="flex-1 px-2 py-1 border rounded min-w-[160px] text-sm" placeholder="备注（可选，如费用、品牌）">
+            <button @click="saveMaintRecord" class="px-6 py-1 bg-blue-500 text-white font-bold rounded hover:bg-blue-600 transition text-sm">登记</button>
+        </div>
+    </div>
+    <div v-if="maintRecs.length" class="mt-6">
+        <h3 class="text-lg font-semibold mb-2 text-gray-700">手动登记记录</h3>
+        <div class="overflow-x-auto">
+            <table class="min-w-full table-auto text-sm text-center">
+                <thead>
+                    <tr class="bg-gray-200 text-gray-700">
+                        <th class="px-4 py-2">项目</th>
+                        <th class="px-4 py-2">里程(km)</th>
+                        <th class="px-4 py-2">日期</th>
+                        <th class="px-4 py-2">备注</th>
+                        <th class="px-4 py-2">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="rec in maintRecsSorted" :key="rec.id" class="border-b hover:bg-gray-50">
+                        <td class="px-4 py-2">${itemName(rec.item)}</td>
+                        <td class="px-4 py-2 font-mono">${rec.mileage}</td>
+                        <td class="px-4 py-2 font-mono">${rec.done_date}</td>
+                        <td class="px-4 py-2 text-gray-500 text-left max-w-[200px] truncate" :title="rec.note">${rec.note}</td>
+                        <td class="px-4 py-2">
+                            <button @click="deleteMaintRecord(rec.id)" class="px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 text-xs transition">删除</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="mt-6">
+        <button @click="showCfg = !showCfg" class="text-sm text-blue-600">周期设置（默认按说明书，可按实际做法调整）</button>
+        <div v-if="showCfg" class="mt-2 p-4 bg-gray-50 rounded-lg">
+            <div v-for="it in intervalItems" :key="it.key" class="flex flex-wrap items-center gap-2 mb-2">
+                <span class="w-20 text-sm text-gray-700">${it.name}</span>
+                <template v-if="it.intervalKm">
+                    <input type="number" v-model.number="editBounds[it.key].km" step="1" min="0" class="w-24 px-2 py-1 border rounded text-sm">
+                    <span class="text-sm text-gray-500">km</span>
+                </template>
+                <template v-if="it.intervalMonths">
+                    <input type="number" v-model.number="editBounds[it.key].months" step="1" min="0" class="w-20 px-2 py-1 border rounded text-sm">
+                    <span class="text-sm text-gray-500">个月</span>
+                </template>
+            </div>
+            <button @click="saveIntervals" class="px-4 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm transition">保存周期</button>
+            <span class="text-xs text-gray-500 ml-2">留空或填 0 恢复默认；保存后立即生效</span>
+        </div>
+    </div>
+    <div class="mt-6">
+        <button @click="showNotes = !showNotes" class="text-sm text-blue-600">${showNotes ? '收起说明' : '说明'}</button>
+        <div v-if="showNotes">
+            <p class="mt-2 text-xs text-gray-400">备注提取规则：从加油记录备注中按关键词识别（机油、齿轮油、空滤、火花塞、气门、皮带、刹车、刹车油、轮胎、冷却液、蓄电池、节气门）；与手动登记合并，取里程最大的一次。</p>
+            <p class="mt-2 text-xs text-gray-400">长周期与易忽略（说明书）：机油滤网清洁 12000km/18 个月；燃油泵过滤器 50000km；燃油管、制动液软管、曲轴箱通气管 4 年更换；停车架润滑 12000km；积油管定期排废液；转向机构、CVT 每 6000km 检查。周期与规格按官方说明书（HJ150T-28）与笔记整理；经验值来自笔记优化表与师傅说法。</p>
+        </div>
+    </div>
+</div>
+</div>
+
+<script>
+if (typeof ChartDataLabels !== 'undefined') {
+    Chart.register(ChartDataLabels);
+}
+
+const { createApp } = Vue;
+
+// PocketBase record -> page row (the shape the old records endpoint returned).
+function mapRecord(r) {
+  return {
+    id: r.id,
+    _time: r.record_time,
+    fuel_amount: r.fuel_amount,
+    total_mileage: r.total_mileage,
+    remark: r.remark || ''
+  };
+}
+
+function csvEscape(v) {
+  var s = String(v == null ? '' : v);
+  return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+
+// Minimal RFC-4180 reader: quoted fields, embedded delimiters/newlines,
+// doubled-quote escapes. Returns an array of string arrays.
+function parseCSV(text, delimiter) {
+  var rows = [], row = [], field = '', quoted = false;
+  for (var i = 0; i < text.length; i++) {
+    var ch = text[i];
+    if (quoted) {
+      if (ch === '"') {
+        if (text[i + 1] === '"') { field += '"'; i++; }
+        else { quoted = false; }
+      } else { field += ch; }
+    } else if (ch === '"') {
+      quoted = true;
+    } else if (ch === delimiter) {
+      row.push(field); field = '';
+    } else if (ch === '\n') {
+      row.push(field); field = ''; rows.push(row); row = [];
+    } else if (ch === '\r') {
+      // dropped; the following \n ends the row
+    } else { field += ch; }
+  }
+  if (field !== '' || row.length > 0) { row.push(field); rows.push(row); }
+  return rows;
+}
+
+// Same normalization the old server-side import used.
+function normalizeFuelTime(raw) {
+  var t = String(raw).replace(/\//g, '-').trim();
+  if (t.split(':').length === 2) t += ':00';
+  return t;
+}
+
+const MAINT_BASE = '/web/lightapi/maint';
+const MAINT_CFG_URL = '/web/lightapi/maintcfg/blob';
+
+// Intervals and specs from the official manual as analyzed in the
+// user's docsnew notes (HJ150T-28, manual p.38-40 / p.61-62). Dual
+// bounds mean whichever comes first. exp = the real-world cycle from
+// the user's optimized notes and the mechanic's verdicts (display
+// only; progress is driven by the manual cycle unless overridden).
+// sev = severity if ignored: 大 / 中 / 小.
+const MAINT_ITEMS = [
+  { key: 'oil', name: '机油', action: '更换', intervalKm: 3000, intervalMonths: 6, exp: '经验 3500–4000 km', sev: '大', spec: 'API SL · JASO MB · SAE 10W-40 · 800ml', impactLabel: '实际损伤', consequence: '机油衰减、油泥增多，润滑下降磨损气缸与活塞环，长期拖延可能拉缸；前期表现是噪音变大、动力下降、油耗上升。出保后全合成可放宽至 3500–4000km，不宜超 5000km。', cost: '全合成 70–120 元；拉缸大修上千元。' },
+  { key: 'gear', name: '齿轮油', action: '更换', intervalKm: 12000, intervalMonths: 12, exp: null, sev: '中', spec: '豪爵专用或 API GL-5 · SAE 80W-90 · 120ml', impactLabel: '实际损伤', consequence: '齿轮油衰减后齿轮磨损加剧，出现异响与传动阻力，长期会啃齿。', cost: '换油几十元；齿轮箱维修几百元。' },
+  { key: 'air', name: '空滤', action: '更换', intervalKm: 6000, intervalMonths: null, exp: '经验 10000 km', sev: '中', spec: '含油纸滤芯，禁止清洗；多尘环境提前更换', impactLabel: '体验为主', consequence: '堵塞后动力下降、油耗升高；滤芯破损则灰尘入缸造成磨损。优化表按 10000km 更换。', cost: '滤芯 40–70 元，更换简单。' },
+  { key: 'spark', name: '火花塞', action: '更换', intervalKm: 10000, intervalMonths: null, exp: '经验 20000 km', sev: '小', spec: 'NGK CPR7EA · 间隙 0.8–0.9mm · 每 6000km 检查', impactLabel: '体验为主', consequence: '点火变弱，启动困难、怠速抖动、加速无力、油耗上升；检查时颜色淡棕色为正常。优化表认为 20000km 前基本无需更换。', cost: '塞子本身便宜，损失有限。' },
+  { key: 'valve', name: '气门间隙', action: '检查', intervalKm: 6000, intervalMonths: null, exp: null, sev: '大', spec: '冷态检查 · 进气 0.10–0.14mm · 排气 0.20–0.24mm · 需专业人员', impactLabel: '实际损伤', consequence: '间隙失准导致噪音与动力下降；间隙过小长期会烧气门（关闭不严过热）。通常检查后不需要调整。', cost: '检查调整以工时费为主；烧气门需拆缸头，费用高。' },
+  { key: 'belt', name: '驱动皮带', action: '更换', intervalKm: 24000, intervalMonths: null, exp: null, sev: '中', spec: '硬性更换指标 · 每 6000km 检查 · 建议专业更换', impactLabel: '实际损伤', consequence: '皮带是橡胶件，会老化磨损；断裂则车辆完全失去动力，只能推车或拖车。', cost: '皮带 150–200 元 + 工时约 50 元。' },
+  { key: 'brakePad', name: '制动片 / 盘', action: '检查', intervalKm: 6000, intervalMonths: null, exp: null, sev: '大', spec: '片磨到限度刻痕更换 · 盘厚度小于 3.5mm 更换 · 新片需 300km 磨合', impactLabel: '安全件', consequence: '磨没后制动距离变长并啃伤刹车盘，极端会失灵；先兆是异响与刹车变软。', cost: '刹车片 60–100 元；刹车盘几百元。' },
+  { key: 'brakeOil', name: '制动液', action: '更换', intervalKm: null, intervalMonths: 24, exp: null, sev: '大', spec: 'DOT4 · 每 6 个月检查液面，不低于 LOWER 线', impactLabel: '安全件', consequence: '制动液吸水后沸点下降，极端时沸腾导致制动失灵。平时无感，出问题就是大事。', cost: '换油几十元。' },
+  { key: 'tire', name: '轮胎', action: '检查', intervalKm: null, intervalMonths: null, exp: null, sev: '大', spec: '前 110/80-14 · 后 130/70-14 · 真空胎 · 换胎后必须做动平衡', impactLabel: '安全件', consequence: '手册每 3000km 检查胎压与磨损。胎压（冷胎）：单人前 200 / 后 225 kPa，双人前 200 / 后 250 kPa。磨损条触地必须更换，侧面损坏或破损大于 6mm 不能修复。', cost: '一条一两百元。' },
+  { key: 'coolant', name: '冷却液', action: '更换', intervalKm: 8000, intervalMonths: 24, exp: null, sev: '中', spec: '乙二醇基（铝散热器适用）· 50:50 配比 · 更换 600ml', impactLabel: '实际损伤', consequence: '防冻液的防腐蚀和防锈能力随时间衰减，长期不换会腐蚀水道、影响散热。', cost: '更换费用不高。' },
+  { key: 'battery', name: '蓄电池', action: '检查', intervalKm: null, intervalMonths: 6, exp: null, sev: '小', spec: '12V 6Ah 全密封 · 电压低于 12.4V 需充电 · 长期不用每月补电', impactLabel: '体验为主', consequence: '亏电导致起动无力、灯光暗淡，长期亏电损伤电池寿命。', cost: '检查电压免费，充电便宜；换电池一两百元。' },
+  { key: 'throttle', name: '节气门体', action: '清洗', intervalKm: 12000, intervalMonths: null, exp: '经验 15000–20000 km', sev: '小', spec: '需专业人员 · 禁止调整限位螺钉', impactLabel: '体验为主', consequence: '积碳导致怠速不稳、油耗上升。优化表认为无异常可延至 15000–20000km。', cost: '清洗以工时费为主。' }
+];
+
+function maintMatch(key, remark) {
+  if (!remark) return false;
+  switch (key) {
+    case 'oil': return remark.indexOf('机油') >= 0 && remark.indexOf('滤网') < 0;
+    case 'gear': return remark.indexOf('齿轮油') >= 0;
+    case 'air': return remark.indexOf('空滤') >= 0 || remark.indexOf('空气滤') >= 0;
+    case 'spark': return remark.indexOf('火花塞') >= 0;
+    case 'valve': return remark.indexOf('气门') >= 0;
+    case 'belt': return remark.indexOf('皮带') >= 0;
+    case 'brakePad': return remark.indexOf('刹车片') >= 0 || (remark.indexOf('刹车') >= 0 && remark.indexOf('刹车油') < 0);
+    case 'brakeOil': return remark.indexOf('刹车油') >= 0;
+    case 'tire': return remark.indexOf('轮胎') >= 0 || remark.indexOf('换胎') >= 0;
+    case 'coolant': return remark.indexOf('冷却液') >= 0 || remark.indexOf('防冻液') >= 0;
+    case 'battery': return remark.indexOf('蓄电池') >= 0 || remark.indexOf('电瓶') >= 0 || remark.indexOf('电池') >= 0;
+    case 'throttle': return remark.indexOf('节气门') >= 0;
+    default: return false;
+  }
+}
+
+// rows: page rows {_time, total_mileage, remark}. Latest event per item
+// wins (mileage order, then time order).
+function extractMaintEvents(rows) {
+  const sorted = [...rows].sort((a, b) => (parseFloat(a.total_mileage) - parseFloat(b.total_mileage)) || (new Date(a._time) - new Date(b._time)));
+  const out = {};
+  for (const r of sorted) {
+    const remark = r.remark || '';
+    if (!remark) continue;
+    for (const it of MAINT_ITEMS) {
+      if (maintMatch(it.key, remark)) {
+        out[it.key] = { mileage: parseFloat(r.total_mileage), date: (r._time || '').split(' ')[0], source: 'remark' };
+      }
+    }
+  }
+  return out;
+}
+
+// Manual log entries override extracted events at equal-or-greater mileage.
+function mergeMaintEvents(extracted, manualRecs) {
+  const out = {};
+  for (const k in extracted) out[k] = extracted[k];
+  for (const r of manualRecs || []) {
+    const cur = out[r.item];
+    const m = parseFloat(r.mileage);
+    if (!cur || m > cur.mileage || (m === cur.mileage && (r.done_date || '') >= (cur.date || ''))) {
+      out[r.item] = { mileage: m, date: r.done_date || '', source: 'manual', note: r.note || '' };
+    }
+  }
+  return out;
+}
+
+function monthsBetween(fromDateStr, toDate) {
+  const d = new Date(fromDateStr);
+  if (isNaN(d.getTime())) return null;
+  return (toDate.getTime() - d.getTime()) / (1000 * 3600 * 24 * 30.44);
+}
+
+// Effective bounds for one item: overrides may be a legacy plain number
+// (applies to the item's first bound) or {km, months}.
+function effBounds(it, overrides) {
+  let km = it.intervalKm;
+  let mo = it.intervalMonths;
+  const ov = overrides && overrides[it.key];
+  if (typeof ov === 'number' && ov > 0) {
+    if (it.intervalKm) km = ov;
+    else if (it.intervalMonths) mo = ov;
+  } else if (ov && typeof ov === 'object') {
+    if (ov.km > 0) km = ov.km;
+    if (ov.months > 0) mo = ov.months;
+  }
+  return { km: km, months: mo };
+}
+
+function defaultEditBounds() {
+  const out = {};
+  for (const it of MAINT_ITEMS) {
+    if (it.intervalKm || it.intervalMonths) {
+      out[it.key] = { km: it.intervalKm || null, months: it.intervalMonths || null };
+    }
+  }
+  return out;
+}
+
+function lastLabelFor(ev) {
+  if (ev.source === 'never') return ev.date ? '新车至今未做（' + (ev.approx ? '约 ' : '') + ev.date + ' 起算）' : '新车至今未做';
+  let src = '（备注提取）';
+  if (ev.source === 'manual') {
+    src = ev.note ? '（手动登记：' + ev.note + '）' : '（手动登记）';
+  }
+  return '上次保养：' + ev.mileage + ' km · ' + ev.date + src;
+}
+
+function computeMaintCards(items, events, currentMileage, today, overrides, neverDone, purchaseDate, purchaseDateApprox) {
+  const neverSet = {};
+  for (const k of (neverDone || [])) neverSet[k] = true;
+  const cards = items.map((it) => {
+    const b = effBounds(it, overrides);
+    let ev = events[it.key];
+    const never = !ev && !!neverSet[it.key];
+    if (never) ev = { mileage: 0, date: purchaseDate || '', source: 'never', approx: !!purchaseDateApprox };
+    const card = { key: it.key, name: it.name, action: it.action, spec: it.spec, impactLabel: it.impactLabel, sev: it.sev, consequence: it.consequence, cost: it.cost, pct: null, statusLabel: '', badgeStyle: '', barColor: '', mainNumber: '', detailProgress: '', lastLabel: '', assumeLabel: '', cycleLabel: '', score: 0 };
+    const parts = [];
+    if (b.km) parts.push(b.km + 'km');
+    if (b.months) parts.push(b.months + '月');
+    if (parts.length === 0) {
+      card.cycleLabel = it.action + ' · 按状态';
+      card.statusLabel = '检查';
+      card.badgeStyle = 'background:#f3f4f6;color:#4b5563';
+      card.score = 0;
+      card.lastLabel = ev ? lastLabelFor(ev) : '备注和登记里都没有记录';
+      return card;
+    }
+    card.cycleLabel = it.action + ' · ' + parts.join('/') + (it.exp ? ' · ' + it.exp : '');
+    if (!ev) {
+      card.statusLabel = '未记录';
+      card.badgeStyle = 'background:#f3f4f6;color:#4b5563';
+      card.score = 1.5;
+      card.lastLabel = '备注和登记里都没有记录';
+      if (b.km && currentMileage > 0) {
+        const over = Math.round(currentMileage - b.km);
+        card.assumeLabel = over > 0 ? ('若新车至今未做，已行驶 ' + currentMileage + ' km，超出周期约 ' + over + ' km') : ('若新车至今未做，已行驶 ' + currentMileage + ' km，距周期还差约 ' + Math.round(b.km - currentMileage) + ' km');
+      }
+      return card;
+    }
+    let pctKm = null;
+    let pctMo = null;
+    let elapsedKm = 0;
+    let elapsedMo = 0;
+    if (b.km) {
+      elapsedKm = Math.max(0, currentMileage - ev.mileage);
+      pctKm = elapsedKm / b.km;
+    }
+    if (b.months && ev.date) {
+      const m = monthsBetween(ev.date, today);
+      if (m !== null && !isNaN(m)) {
+        elapsedMo = Math.max(0, m);
+        pctMo = elapsedMo / b.months;
+      }
+    }
+    if (pctKm === null && pctMo === null) {
+      card.statusLabel = never ? '未做过' : '未记录';
+      card.badgeStyle = 'background:#f3f4f6;color:#4b5563';
+      card.score = 1.5;
+      card.lastLabel = never ? '新车至今未做' : '上次日期无法解析：' + ev.date;
+      return card;
+    }
+    const pct = Math.max(pctKm === null ? -1 : pctKm, pctMo === null ? -1 : pctMo);
+    card.pct = pct;
+    card.lastLabel = lastLabelFor(ev);
+    if (pct < 0.8) {
+      card.statusLabel = '正常';
+      card.badgeStyle = 'background:#dcfce7;color:#166534';
+      card.barColor = '#16a34a';
+      card.score = 1;
+    } else if (pct < 1) {
+      card.statusLabel = '将近';
+      card.badgeStyle = 'background:#fef3c7;color:#92400e';
+      card.barColor = '#d97706';
+      card.score = 2;
+    } else {
+      card.statusLabel = '已逾期';
+      card.badgeStyle = 'background:#fee2e2;color:#991b1b';
+      card.barColor = '#dc2626';
+      card.score = 3;
+    }
+    card.score += pct * 0.01;
+    const nums = [];
+    const details = [];
+    if (pctKm !== null) {
+      if (pctKm < 1) nums.push('剩 ' + Math.round(b.km - elapsedKm) + 'km');
+      else nums.push('超 ' + Math.round(elapsedKm - b.km) + 'km');
+      details.push('已行驶 ' + Math.round(elapsedKm) + ' km' + (pctKm < 1 ? '，还剩约 ' + Math.round(b.km - elapsedKm) + ' km' : '，已超约 ' + Math.round(elapsedKm - b.km) + ' km'));
+    }
+    if (pctMo !== null) {
+      if (pctMo < 1) nums.push('剩 ' + (b.months - elapsedMo).toFixed(1) + '月');
+      else nums.push('超 ' + (elapsedMo - b.months).toFixed(1) + '月');
+      details.push('已过 ' + elapsedMo.toFixed(1) + ' 个月' + (pctMo < 1 ? '，还剩约 ' + (b.months - elapsedMo).toFixed(1) + ' 个月' : '，已超约 ' + (elapsedMo - b.months).toFixed(1) + ' 个月'));
+    }
+    card.mainNumber = nums.join(' · ');
+    card.detailProgress = details.join('；');
+    return card;
+  });
+  cards.sort((a, b) => b.score - a.score);
+  return cards;
+}
+
+createApp({
+    delimiters: ['${', '}'],
+    data() {
+        return {
+            totalMileageInput: null,
+            fuelAmount: null,
+            remark: "",
+            rawStats: [], // 存储后端返回的原始数据
+            authError: false,
+            view: 'fuel',
+            maintItems: MAINT_ITEMS,
+            maintRecs: [],
+            maintCfg: {},
+            regItem: 'oil',
+            regMileage: null,
+            regDate: '',
+            regNote: '',
+            editBounds: defaultEditBounds(),
+            showCfg: false,
+            expanded: {},
+            showNotes: false
+        }
+    },
+    computed: {
+        // 1. 获取最近一次的油耗数值
+        lastEfficiency() {
+            // 从处理好的数据中过滤出有油耗的数据
+            const validList = this.processedStats.filter(item => item.fuel_efficiency !== '--');
+            if (validList.length === 0) return '--';
+            // 返回最后一条（也就是时间轴上最近的一条）
+            return validList[validList.length - 1].fuel_efficiency;
+        },
+        // 【核心】前端数据处理引擎
+        processedStats() {
+            if (!this.rawStats || this.rawStats.length === 0) return [];
+            
+            // 1. 确保数据按时间升序排列，才能正确计算“差值”
+            const sorted = [...this.rawStats].sort((a, b) => new Date(a._time) - new Date(b._time));
+            
+            // 2. 遍历并计算二级数据
+            return sorted.map((item, index) => {
+                let mileage_diff = '--';
+                let days_diff = '--';
+                let fuel_efficiency = '--';
+                let daily_distance = '--';
+                
+                // 处理时间拆分
+                const dateTimeStr = item._time || '';
+                const dateStr = dateTimeStr.split(' ')[0] || '';
+                const timeStr = dateTimeStr.split(' ')[1] || '';
+                
+                // 如果不是第一条记录，则计算差值
+                if (index > 0) {
+                    const prev = sorted[index - 1];
+                    const currMileage = parseFloat(item.total_mileage) || 0;
+                    const prevMileage = parseFloat(prev.total_mileage) || 0;
+                    const currFuel = parseFloat(item.fuel_amount) || 0;
+                    
+                    const diffM = currMileage - prevMileage;
+                    if (diffM > 0) {
+                        mileage_diff = diffM.toFixed(1);
+                        fuel_efficiency = ((currFuel / diffM) * 100).toFixed(2);
+                    }
+                    
+                    // 计算天数差
+                    const currDateObj = new Date(dateTimeStr);
+                    const prevDateObj = new Date(prev._time);
+                    const timeDiff = currDateObj.getTime() - prevDateObj.getTime();
+                    const diffDays = timeDiff / (1000 * 3600 * 24);
+                    
+                    if (diffDays >= 0) {
+                        // 保留一位小数，如果不足0.1天则按实际算或显示0
+                        days_diff = diffDays.toFixed(1);
+                        if (diffM > 0 && diffDays > 0) {
+                            daily_distance = (diffM / diffDays).toFixed(1);
+                        } else if (diffM > 0 && diffDays === 0) {
+                            daily_distance = diffM.toFixed(1); // 同一天录入的距离直接作为日距
+                        }
+                    }
+                }
+                
+                return {
+                    ...item,
+                    date: dateStr,
+                    time: timeStr,
+                    mileage_diff,
+                    days_diff,
+                    fuel_efficiency,
+                    daily_distance
+                };
+            });
+        },
+        // 表格展示使用倒序（最新记录在最上面）
+        reversedStats() {
+            return [...this.processedStats].reverse();
+        },
+        
+        // 顶部统计面板计算
+        totalMileage() {
+            if (this.rawStats.length === 0) return 0;
+            return Math.max(...this.rawStats.map(item => parseFloat(item.total_mileage) || 0));
+        },
+        totalFuel() {
+            return this.rawStats.reduce((sum, item) => sum + (parseFloat(item.fuel_amount) || 0), 0).toFixed(2);
+        },
+        avgEfficiency() {
+            const validList = this.processedStats.filter(item => item.fuel_efficiency !== '--');
+            if (validList.length === 0) return '0.00';
+            const sum = validList.reduce((acc, item) => acc + parseFloat(item.fuel_efficiency), 0);
+            return (sum / validList.length).toFixed(2);
+        },
+        recentTrend() {
+            const validList = this.processedStats.filter(item => item.fuel_efficiency !== '--');
+            if (validList.length < 2) return '数据不足';
+            
+            const last = parseFloat(validList[validList.length - 1].fuel_efficiency);
+            const prev = parseFloat(validList[validList.length - 2].fuel_efficiency);
+            const avg = parseFloat(this.avgEfficiency);
+            
+            let trend = last > avg + 0.05 ? '高于平均，' : last < avg - 0.05 ? '低于平均，' : '等于平均，';
+            trend += last > prev + 0.05 ? '高于上次' : last < prev - 0.05 ? '低于上次' : '等于上次';
+            return trend;
+        },
+        latestFuelDate() {
+            if (this.rawStats.length === 0) return '--';
+            let best = this.rawStats[0];
+            for (const r of this.rawStats) {
+                if (parseFloat(r.total_mileage) > parseFloat(best.total_mileage)) best = r;
+            }
+            return (best._time || '').split(' ')[0] || '--';
+        },
+        maintEvents() {
+            return mergeMaintEvents(extractMaintEvents(this.rawStats), this.maintRecs);
+        },
+        maintCards() {
+            const cfg = this.maintCfg || {};
+            return computeMaintCards(this.maintItems, this.maintEvents, this.totalMileage, new Date(), cfg.intervals || {}, cfg.neverDone || [], cfg.purchaseDate || '', !!cfg.purchaseDateApprox);
+        },
+        intervalItems() {
+            return this.maintItems.filter((it) => it.intervalKm || it.intervalMonths);
+        },
+        maintRecsSorted() {
+            return [...this.maintRecs].sort((a, b) => parseFloat(b.mileage) - parseFloat(a.mileage));
+        }
+    },
+    watch: {
+        view(v) {
+            if (v === 'fuel') {
+                this.$nextTick(() => { this.drawChart(); });
+            }
+        }
+    },
+    methods: {
+        // 判断是否为最近 3 天内的记录
+        isDeletable(timeStr) {
+            if (!timeStr) return false;
+            // 处理后端传来的如 2026-03-19 21:46:32，去掉中间的横杠影响部分旧版浏览器解析
+            const recordTime = new Date(timeStr.replace(/-/g, '/')).getTime(); 
+            const now = new Date().getTime();
+            // 3天的毫秒数: 3 * 24 * 60 * 60 * 1000 = 259200000
+            return (now - recordTime) <= 259200000;
+        },
+        toggleCard(key) {
+            this.expanded[key] = !this.expanded[key];
+        },
+        itemName(key) {
+            const it = this.maintItems.find((x) => x.key === key);
+            return it ? it.name : key;
+        },
+        async fetchMaint() {
+            try {
+                const res = await axios.get(MAINT_BASE + '/records/maint_records', {
+                    params: { perPage: 200 }
+                });
+                if ((res.request && res.request.responseURL && res.request.responseURL.indexOf('/login') !== -1) || typeof res.data === 'string') {
+                    const authErr = new Error('AUTH');
+                    authErr.code = 'AUTH';
+                    throw authErr;
+                }
+                this.authError = false;
+                this.maintRecs = res.data.items || [];
+            } catch (e) {
+                if (e && e.code === 'AUTH') { this.authError = true; } else { console.error('maint fetch failed', e); }
+            }
+            try {
+                const cfg = await axios.get(MAINT_CFG_URL);
+                this.maintCfg = cfg.data || {};
+            } catch (e) {
+                if (e.response && e.response.status === 404) {
+                    this.maintCfg = {};
+                } else {
+                    console.error('maint cfg fetch failed', e);
+                }
+            }
+            const ov = (this.maintCfg && this.maintCfg.intervals) || {};
+            const draft = {};
+            for (const it of this.maintItems) {
+                if (it.intervalKm || it.intervalMonths) {
+                    const b = effBounds(it, ov);
+                    draft[it.key] = { km: b.km, months: b.months };
+                }
+            }
+            this.editBounds = draft;
+            if (!this.regMileage) this.regMileage = this.totalMileage || null;
+            if (!this.regDate) {
+                const d = new Date();
+                this.regDate = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+            }
+        },
+        async saveMaintRecord() {
+            if (!this.regItem || this.regMileage === null || this.regMileage === '') return;
+            try {
+                await axios.post(MAINT_BASE + '/records/maint_records', {
+                    item: this.regItem,
+                    mileage: this.regMileage,
+                    done_date: this.regDate || '',
+                    note: this.regNote || ''
+                });
+                this.regNote = '';
+                await this.fetchMaint();
+            } catch (e) {
+                alert('登记失败');
+            }
+        },
+        async deleteMaintRecord(id) {
+            if (!id) return;
+            if (confirm('确定删除这条保养登记吗？')) {
+                try {
+                    await axios.delete(MAINT_BASE + '/records/maint_records/' + encodeURIComponent(id));
+                    await this.fetchMaint();
+                } catch (e) {
+                    alert('删除失败');
+                }
+            }
+        },
+        async saveIntervals() {
+            const intervals = {};
+            for (const it of this.maintItems) {
+                const d = this.editBounds[it.key];
+                if (!d) continue;
+                const entry = {};
+                if (d.km > 0) entry.km = d.km;
+                if (d.months > 0) entry.months = d.months;
+                if (entry.km || entry.months) intervals[it.key] = entry;
+            }
+            try {
+                const payload = Object.assign({}, this.maintCfg, { intervals: intervals });
+                await axios.post(MAINT_CFG_URL, { payload: payload });
+                await this.fetchMaint();
+                alert('周期已保存');
+            } catch (e) {
+                alert('保存失败');
+            }
+        },
+        async fetchStats() {
+            try {
+                var all = [];
+                var page = 1, totalPages = 1;
+                while (page <= totalPages) {
+                    const res = await axios.get(API_BASE + '/records/fuel_records', {
+                        params: { sort: 'record_time', perPage: 200, page: page }
+                    });
+                    if ((res.request && res.request.responseURL && res.request.responseURL.indexOf('/login') !== -1) || typeof res.data === 'string') {
+                        const authErr = new Error('AUTH');
+                        authErr.code = 'AUTH';
+                        throw authErr;
+                    }
+                    this.authError = false;
+                    totalPages = res.data.totalPages || 1;
+                    all = all.concat(res.data.items || []);
+                    page++;
+                }
+                this.rawStats = all.map(mapRecord);
+                this.$nextTick(() => {
+                    this.drawChart();
+                });
+            } catch (error) {
+                if (error && error.code === 'AUTH') {
+                    this.authError = true;
+                    this.$nextTick(() => { const a = document.getElementById('authLoginLink'); if (a) a.href = '/login?next=' + encodeURIComponent(window.location.pathname + window.location.search); });
+                } else {
+                    console.error("获取数据失败:", error);
+                }
+            }
+        },
+        async addRecord() {
+            if (!this.totalMileageInput || !this.fuelAmount) return;
+            const payload = {
+                total_mileage: this.totalMileageInput,
+                fuel_amount: this.fuelAmount,
+                remark: this.remark
+            };
+            try {
+                await axios.post(API_BASE + '/records/fuel_records', payload);
+                this.totalMileageInput = null;
+                this.fuelAmount = null;
+                this.remark = "";
+                await this.fetchStats();
+            } catch (error) {
+                alert("添加记录失败");
+            }
+        },
+        async deleteRecord(id) {
+            if (!id) {
+                alert("该记录没有ID，无法通过接口删除");
+                return;
+            }
+            if (confirm('确定删除这条记录吗？')) {
+                try {
+                    await axios.delete(API_BASE + '/records/fuel_records/' + encodeURIComponent(id));
+                    await this.fetchStats();
+                } catch (error) {
+                    alert("删除失败");
+                }
+            }
+        },
+        exportCSV() {
+            const sorted = [...this.rawStats].sort((a, b) => new Date(a._time) - new Date(b._time));
+            const head = 'Time,Fuel_Amount,Total_Mileage,Remark';
+            const lines = sorted.map(function(item) {
+                return [item._time, item.fuel_amount, item.total_mileage, item.remark]
+                    .map(csvEscape).join(',');
+            });
+            const blob = new Blob([head + '\n' + lines.join('\n')], { type: 'text/csv;charset=utf-8' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'fuel_stats.csv';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(a.href);
+        },
+        async importCSV(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            try {
+                const buf = await file.arrayBuffer();
+                let text;
+                try {
+                    text = new TextDecoder('utf-8', { fatal: true }).decode(buf);
+                } catch (e) {
+                    text = new TextDecoder('gbk').decode(buf);
+                }
+                if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+                const firstLine = text.split('\n')[0] || '';
+                const delimiter = firstLine.indexOf('\t') >= 0 ? '\t' : ',';
+                const rows = parseCSV(text, delimiter);
+                if (rows.length === 0) throw new Error('empty file');
+                const header = rows[0];
+                const col = function(names) {
+                    for (let n = 0; n < names.length; n++) {
+                        const idx = header.indexOf(names[n]);
+                        if (idx >= 0) return idx;
+                    }
+                    return -1;
+                };
+                const cT = col(['Time', 'time']);
+                const cF = col(['Fuel_Amount', 'fuel_amount', 'Fuel_amount']);
+                const cM = col(['Total_Mileage', 'total_mileage', 'Total_mileage']);
+                const cR = col(['Remark', 'remark']);
+                let ok = 0, skipped = 0;
+                for (let i = 1; i < rows.length; i++) {
+                    const row = rows[i];
+                    const tVal = cT >= 0 ? row[cT] : '';
+                    const fVal = cF >= 0 ? row[cF] : '';
+                    const mVal = cM >= 0 ? row[cM] : '';
+                    const rVal = cR >= 0 ? (row[cR] || '') : '';
+                    if (!tVal || !fVal || !mVal) { skipped++; continue; }
+                    const fuel = parseFloat(fVal), miles = parseFloat(mVal);
+                    if (isNaN(fuel) || isNaN(miles)) { skipped++; continue; }
+                    try {
+                        await axios.post(API_BASE + '/records/fuel_records', {
+                            record_time: normalizeFuelTime(tVal),
+                            fuel_amount: fuel,
+                            total_mileage: miles,
+                            remark: rVal
+                        });
+                        ok++;
+                    } catch (e) { skipped++; }
+                }
+                this.$refs.fileInput.value = '';
+                await this.fetchStats();
+                if (skipped > 0) alert('导入 ' + ok + ' 条，跳过 ' + skipped + ' 条');
+            } catch (error) {
+                alert("导入失败，请检查 CSV 格式");
+            }
+        },
+        drawChart() {
+            const validStats = this.processedStats.filter(item => item.fuel_efficiency !== '--');
+            if (validStats.length === 0) return;
+
+            // 折线图
+            const ctxFuel = document.getElementById('fuelChart').getContext('2d');
+            if (window.fuelChart instanceof Chart) window.fuelChart.destroy();
+            window.fuelChart = new Chart(ctxFuel, {
+                type: 'line',
+                data: {
+                    labels: validStats.map(item => item.date),
+                    datasets: [{
+                        label: '油耗 (L/100km)',
+                        data: validStats.map(item => parseFloat(item.fuel_efficiency)),
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.3,
+                        fill: true
+                    }]
+                },
+                options: { responsive: true, plugins: { datalabels: { display: false } } }
+            });
+
+            // 散点图
+            const ctxDist = document.getElementById('distanceChart').getContext('2d');
+            if (window.distanceChart instanceof Chart) window.distanceChart.destroy();
+            const scatterData = validStats.map(item => ({
+                x: parseFloat(item.total_mileage),
+                y: parseFloat(item.fuel_efficiency),
+                remark: item.remark
+            }));
+            window.distanceChart = new Chart(ctxDist, {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: '单点表现',
+                        data: scatterData,
+                        backgroundColor: '#10b981',
+                        pointRadius: 6,
+                        pointHoverRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: { title: { display: true, text: '总里程 (km)' } },
+                        y: { title: { display: true, text: '油耗 (L/100km)' } }
+                    },
+                    plugins: {
+                        datalabels: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const point = context.raw;
+                                    return [
+                                        `里程: ${point.x} km`,
+                                        `油耗: ${point.y} L/100km`,
+                                        point.remark ? `备注: ${point.remark}` : ''
+                                    ].filter(Boolean);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    },
+    mounted() {
+        this.fetchStats();
+        this.fetchMaint();
+    }
+}).mount('#app');
+</script>
+
+
+</body>
+</html>
